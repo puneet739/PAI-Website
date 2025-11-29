@@ -6,6 +6,7 @@ export interface Member {
   email: string;
   name: string;
   phone: string | null;
+  profile_image: string | null;
   membership_type: "basic" | "premium" | "instructor";
   membership_status: "active" | "inactive" | "pending";
   active_until: string | null;
@@ -44,7 +45,7 @@ export async function verifyLogin(email: string, password: string): Promise<Memb
 // Get member by ID
 export async function getMemberById(id: number): Promise<Member | null> {
   return queryOne<Member>(
-    "SELECT id, email, name, phone, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE id = ?",
+    "SELECT id, email, name, phone, profile_image, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE id = ?",
     [id]
   );
 }
@@ -52,7 +53,7 @@ export async function getMemberById(id: number): Promise<Member | null> {
 // Get member by email
 export async function getMemberByEmail(email: string): Promise<Member | null> {
   return queryOne<Member>(
-    "SELECT id, email, name, phone, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE email = ?",
+    "SELECT id, email, name, phone, profile_image, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE email = ?",
     [email]
   );
 }

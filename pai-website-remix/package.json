@@ -19,6 +19,7 @@
     "isbot": "^5.1.31",
     "mysql2": "^3.15.3",
     "nodemailer": "^6.9.7",
+    "pdfkit": "^0.15.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router": "^7.9.2"
@@ -29,6 +30,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",
     "@types/nodemailer": "^6.4.14",
+    "@types/pdfkit": "^0.13.4",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "tailwindcss": "^4.1.13",

@@ -32,8 +32,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const applicationSuccess = url.searchParams.get("application") === "success";
   const insuranceRequested = url.searchParams.get("insurance") === "requested";
   const ratingRequested = url.searchParams.get("rating") === "requested";
+  const imageUpdated = url.searchParams.get("image") === "updated";
 
-  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested };
+  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -44,12 +45,16 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested } = loaderData;
+  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
   });
+
+  // Check if membership is expired
+  const isExpired = member.active_until && new Date(member.active_until) < new Date();
+  const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
 
   const getMembershipBadgeColor = (type: string) => {
     switch (type) {
@@ -164,6 +169,26 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
+        {imageUpdated && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Profile Image Updated!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your profile image has been updated successfully.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
           <div className="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -260,7 +285,55 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           {/* Member Info */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Member Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Member Information</h3>
+              
+              {/* Profile Image Section */}
+              <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                    {member.profile_image ? (
+                      <img 
+                        src={member.profile_image} 
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sky-500 to-orange-500 text-white text-3xl font-bold">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{member.name}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{member.email}</p>
+                  <form action="/upload-profile-image" method="post" encType="multipart/form-data">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/30 transition text-xs font-medium cursor-pointer">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Change Photo</span>
+                      <input 
+                        type="file" 
+                        name="profileImage" 
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const form = e.target.form;
+                          if (form && e.target.files && e.target.files.length > 0) {
+                            form.submit();
+                          }
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Max 2MB • JPG, PNG, WebP
+                    </p>
+                  </form>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</span>
@@ -278,16 +351,30 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
-                  <span className={`text-xs px-3 py-1 rounded-full ${
-                    member.membership_status === "active"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
-                      : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200"
-                  }`}>
-                    {member.membership_status === "active" && member.active_until
-                      ? `Active till: ${new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-                      : member.membership_status.charAt(0).toUpperCase() + member.membership_status.slice(1)
-                    }
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-3 py-1 rounded-full ${
+                      isExpired
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+                        : member.membership_status === "active"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200"
+                    }`}>
+                      {isExpired
+                        ? `Expired on: ${expiryDate}`
+                        : member.membership_status === "active" && member.active_until
+                        ? `Active till: ${expiryDate}`
+                        : member.membership_status.charAt(0).toUpperCase() + member.membership_status.slice(1)
+                      }
+                    </span>
+                    {isExpired && (
+                      <a
+                        href="/renew-membership"
+                        className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30 transition font-medium"
+                      >
+                        Renew
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between py-3">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Password</span>

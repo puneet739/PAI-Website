@@ -142,46 +142,8 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
   const downloadInsuranceCard = () => {
     if (!activePolicy) return;
-
-    // Create a simple text-based insurance card
-    const cardContent = `
-╔════════════════════════════════════════════════════════╗
-║     PARAGLIDING ASSOCIATION OF INDIA (PAI)            ║
-║              INSURANCE CERTIFICATE                     ║
-╠════════════════════════════════════════════════════════╣
-║                                                        ║
-║  Policy Number: ${activePolicy.policy_number.padEnd(30)}║
-║  Policy Type:   ${activePolicy.policy_type.toUpperCase().padEnd(30)}║
-║                                                        ║
-║  Member Name:   ${member.name.padEnd(30)}║
-║  Member Email:  ${member.email.padEnd(30)}║
-║                                                        ║
-║  Coverage:      ${formatCurrency(activePolicy.coverage_amount).padEnd(30)}║
-║  Valid From:    ${formatDate(activePolicy.start_date).padEnd(30)}║
-║  Valid Until:   ${formatDate(activePolicy.end_date).padEnd(30)}║
-║                                                        ║
-║  Status:        ${activePolicy.status.toUpperCase().padEnd(30)}║
-║                                                        ║
-╚════════════════════════════════════════════════════════╝
-
-This certificate confirms that the above-named member is covered
-under the PAI Paragliding Insurance Policy for the period specified.
-
-In case of emergency, contact: emergency@pai.org.in
-Policy Helpline: +91-1800-XXX-XXXX
-
-Generated on: ${new Date().toLocaleString('en-IN')}
-    `;
-
-    const blob = new Blob([cardContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `PAI-Insurance-Card-${activePolicy.policy_number}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Redirect to PDF download route
+    window.location.href = `/download-insurance-card/${activePolicy.id}`;
   };
 
   return (

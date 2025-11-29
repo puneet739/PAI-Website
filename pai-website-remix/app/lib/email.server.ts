@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 
+// Global email configuration toggle
+const EMAIL_ENABLED = process.env.ENABLE_EMAIL === "true";
+
 // Email configuration from environment variables
 const emailConfig = {
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -17,6 +20,11 @@ const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pai.org.in";
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport(emailConfig);
+
+// Helper function to check if email is enabled
+function isEmailEnabled(): boolean {
+  return EMAIL_ENABLED;
+}
 
 interface MembershipRequestEmail {
   userName: string;
@@ -56,6 +64,12 @@ interface PasswordResetOTPEmail {
 
 // Send new membership request notification
 export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping membership request email.");
+    return;
+  }
+
   const { userName, userEmail, phone, details, currentRating, requestId } = data;
 
   const userEmailContent = `
@@ -142,6 +156,12 @@ export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
 
 // Send insurance request notification
 export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping insurance request email.");
+    return;
+  }
+
   const { userName, userEmail, phone, insurancePlan, coverage, premium, comments, requestId } = data;
 
   const userEmailContent = `
@@ -231,6 +251,12 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
 
 // Send rating upgrade request notification
 export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping rating upgrade request email.");
+    return;
+  }
+
   const { userName, userEmail, phone, currentRating, requestedRating, details, requestId } = data;
 
   const userEmailContent = `
@@ -318,6 +344,12 @@ export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEm
 
 // Send password reset OTP email
 export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping password reset OTP email.");
+    throw new Error("Email service is currently disabled. Please contact administrator.");
+  }
+
   const { userName, userEmail, otp } = data;
 
   const emailContent = `
