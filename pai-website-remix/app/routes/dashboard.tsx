@@ -31,8 +31,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const applicationSuccess = url.searchParams.get("application") === "success";
   const insuranceRequested = url.searchParams.get("insurance") === "requested";
+  const ratingRequested = url.searchParams.get("rating") === "requested";
 
-  return { member, upcomingEvents, applicationSuccess, insuranceRequested };
+  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -43,7 +44,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents, applicationSuccess, insuranceRequested } = loaderData;
+  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
@@ -143,6 +144,26 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
+        {ratingRequested && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Rating Upgrade Request Submitted!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your rating upgrade request has been submitted and is pending admin review. You will receive a QR code via email for the upgrade fee payment. Once approved and payment is verified, your pilot rating will be upgraded.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
           <div className="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -190,13 +211,21 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
           {/* Current Rating */}
           <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Rating</h3>
               </div>
-              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Rating</h3>
+              <a
+                href="/upgrade-rating"
+                className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30 transition font-medium"
+              >
+                Upgrade
+              </a>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{member.pilot_rating}</p>
           </div>

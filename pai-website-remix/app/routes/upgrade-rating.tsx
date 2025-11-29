@@ -1,4 +1,4 @@
-import type { Route } from "./+types/apply-membership";
+import type { Route } from "./+types/upgrade-rating";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 
@@ -29,10 +29,15 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
+  const requestedRating = formData.get("requestedRating");
   const name = formData.get("name");
   const email = formData.get("email");
   const phone = formData.get("phone");
   const details = formData.get("details");
+
+  if (typeof requestedRating !== "string" || !requestedRating) {
+    return { error: "Please select a rating" };
+  }
 
   if (typeof name !== "string" || !name) {
     return { error: "Name is required" };
@@ -50,49 +55,58 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "Details are required" };
   }
 
-  // Check if user already has a pending request
+  // Check if user already has a pending rating upgrade request
   const existingRequest = await query(
-    "SELECT id FROM member_requests WHERE member_id = ? AND status = 'pending' AND request_type = 'new_membership' LIMIT 1",
+    "SELECT id FROM member_requests WHERE member_id = ? AND status = 'pending' AND request_type = 'rating_upgrade' LIMIT 1",
     [userId]
   );
 
   if (existingRequest.length > 0) {
-    return { error: "You already have a pending membership application" };
+    return { error: "You already have a pending rating upgrade request" };
   }
 
-  // Create membership request
+  // Create rating upgrade request
   const result = await query(
-    "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, current_rating, status) VALUES (?, 'new_membership', ?, ?, ?, ?, ?, 'pending')",
-    [userId, name, email, phone, details, member.pilot_rating]
+    "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, current_rating, requested_rating, status) VALUES (?, 'rating_upgrade', ?, ?, ?, ?, ?, ?, 'pending')",
+    [userId, name, email, phone, details, member.pilot_rating, requestedRating]
   );
 
   // Get the inserted request ID
   const requestId = (result as any).insertId;
 
   // Send email notifications
-  const { sendMembershipRequestEmail } = await import("~/lib/email.server");
-  await sendMembershipRequestEmail({
+  const { sendRatingUpgradeRequestEmail } = await import("~/lib/email.server");
+  await sendRatingUpgradeRequestEmail({
     userName: name,
     userEmail: email,
     phone,
-    details,
     currentRating: member.pilot_rating,
+    requestedRating,
+    details,
     requestId,
   });
 
-  return redirect("/dashboard?application=success");
+  return redirect("/dashboard?rating=requested");
 }
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Apply for Membership - PAI" },
-    { name: "description", content: "Apply for PAI membership" },
+    { title: "Upgrade Rating - PAI" },
+    { name: "description", content: "Request a pilot rating upgrade" },
   ];
 }
 
-export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
+export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
   const { member } = loaderData;
   const actionData = useActionData<typeof action>();
+
+  const ratings = [
+    { value: 'P1', label: 'P1 - Beginner Pilot', description: 'Basic paragliding knowledge' },
+    { value: 'P2', label: 'P2 - Novice Pilot', description: 'Intermediate flying techniques' },
+    { value: 'P3', label: 'P3 - Intermediate Pilot', description: 'Advanced maneuvers' },
+    { value: 'P4', label: 'P4 - Advanced Pilot', description: 'Expert level XC flying' },
+    { value: 'P5', label: 'P5 - Master Pilot', description: 'Professional competition level' },
+  ];
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -101,7 +115,7 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
       <div className="flex-1">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
           <div className="px-8 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Apply for Membership</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Upgrade Pilot Rating</h1>
             <a href="/dashboard" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               ← Back to Dashboard
             </a>
@@ -112,15 +126,39 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
           <div className="max-w-2xl mx-auto">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Membership Application
+                Request Rating Upgrade
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Complete this form to apply for PAI membership activation
+                Apply to upgrade your pilot rating to the next level
               </p>
             </div>
 
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-8 shadow-sm">
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">Current Rating</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-200">{member.pilot_rating}</p>
+              </div>
+
               <Form method="post" className="space-y-6">
+                <div>
+                  <label htmlFor="requestedRating" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Requested Rating <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="requestedRating"
+                    name="requestedRating"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Select a rating</option>
+                    {ratings.map((rating) => (
+                      <option key={rating.value} value={rating.value}>
+                        {rating.label} - {rating.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name <span className="text-red-500">*</span>
@@ -166,18 +204,18 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
 
                 <div>
                   <label htmlFor="details" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Additional Details <span className="text-red-500">*</span>
+                    Justification & Details <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="details"
                     name="details"
                     rows={6}
                     required
-                    placeholder="Please provide details about your paragliding experience, training, certifications, and why you want to join PAI..."
+                    placeholder="Please provide details about your flying experience, training completed, number of flights, and why you're ready for this rating upgrade..."
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white resize-none"
                   />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Include information about your flying experience, training history, and any certifications you hold.
+                    Include your total flight hours, recent achievements, training certificates, and any relevant experience.
                   </p>
                 </div>
 
@@ -190,10 +228,10 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">What happens next?</h4>
                   <ul className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
-                    <li>• Your application will be reviewed by PAI administrators</li>
-                    <li>• You will receive a QR code via email for payment</li>
+                    <li>• Your request will be reviewed by PAI administrators</li>
+                    <li>• You will receive a QR code via email for the upgrade fee payment</li>
                     <li>• Share payment screenshot with admin/base</li>
-                    <li>• Upon verification, your membership will be activated</li>
+                    <li>• Upon approval and payment verification, your rating will be upgraded</li>
                   </ul>
                 </div>
 
@@ -208,7 +246,7 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
                     type="submit"
                     className="flex-1 px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition"
                   >
-                    Submit Application
+                    Submit Request
                   </button>
                 </div>
               </Form>

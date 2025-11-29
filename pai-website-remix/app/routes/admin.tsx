@@ -152,6 +152,22 @@ export async function action({ request }: Route.ActionArgs) {
           [member_id, policyNumber, insurance_type, coverage_amount, premium]
         );
       }
+    } else if (request_type === "rating_upgrade") {
+      // Get requested rating from the request
+      const ratingDetails = await query<{ requested_rating: string }>(
+        "SELECT requested_rating FROM member_requests WHERE id = ?",
+        [requestId]
+      );
+
+      if (ratingDetails.length > 0) {
+        const { requested_rating } = ratingDetails[0];
+        
+        // Update member's pilot rating
+        await query(
+          "UPDATE members SET pilot_rating = ? WHERE id = ?",
+          [requested_rating, member_id]
+        );
+      }
     }
   }
 

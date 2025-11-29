@@ -87,10 +87,26 @@ export async function action({ request }: Route.ActionArgs) {
     }
 
     // Create insurance request
-    await query(
+    const result = await query(
       "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, insurance_type, coverage_amount, status) VALUES (?, 'insurance', ?, ?, ?, ?, ?, ?, 'pending')",
       [userId, member.name, email, phone, comments || 'Insurance application', insurancePlan, details.coverage]
     );
+
+    // Get the inserted request ID
+    const requestId = (result as any).insertId;
+
+    // Send email notifications
+    const { sendInsuranceRequestEmail } = await import("~/lib/email.server");
+    await sendInsuranceRequestEmail({
+      userName: member.name,
+      userEmail: email,
+      phone,
+      insurancePlan: insurancePlan.charAt(0).toUpperCase() + insurancePlan.slice(1),
+      coverage: `₹${(details.coverage / 100000).toFixed(0)} Lakh`,
+      premium: `₹${details.premium.toLocaleString('en-IN')}`,
+      comments: comments || 'No additional comments',
+      requestId,
+    });
 
     return redirect("/dashboard?insurance=requested");
   }

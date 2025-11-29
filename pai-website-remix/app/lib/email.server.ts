@@ -1,0 +1,311 @@
+import nodemailer from "nodemailer";
+
+// Email configuration from environment variables
+const emailConfig = {
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASSWORD || "",
+  },
+};
+
+// Base email address for admin notifications
+const BASE_EMAIL = process.env.BASE_EMAIL || "base@pgaoi.org";
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pai.org.in";
+
+// Create reusable transporter
+const transporter = nodemailer.createTransport(emailConfig);
+
+interface MembershipRequestEmail {
+  userName: string;
+  userEmail: string;
+  phone: string;
+  details: string;
+  currentRating: string;
+  requestId: number;
+}
+
+interface InsuranceRequestEmail {
+  userName: string;
+  userEmail: string;
+  phone: string;
+  insurancePlan: string;
+  coverage: string;
+  premium: string;
+  comments: string;
+  requestId: number;
+}
+
+interface RatingUpgradeRequestEmail {
+  userName: string;
+  userEmail: string;
+  phone: string;
+  currentRating: string;
+  requestedRating: string;
+  details: string;
+  requestId: number;
+}
+
+// Send new membership request notification
+export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
+  const { userName, userEmail, phone, details, currentRating, requestId } = data;
+
+  const userEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">PAI Membership Application Received</h2>
+      <p>Dear ${userName},</p>
+      <p>Thank you for applying for PAI membership. Your application has been received and is under review.</p>
+      
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0284c7;">Application Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+      </div>
+
+      <h3 style="color: #0284c7;">Next Steps:</h3>
+      <ol>
+        <li>Our admin team will review your application</li>
+        <li>You will receive a QR code via email for payment</li>
+        <li>Share the payment screenshot with admin/base</li>
+        <li>Your membership will be activated upon verification</li>
+      </ol>
+
+      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  const adminEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">New Membership Application</h2>
+      <p>A new membership application has been submitted.</p>
+      
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0284c7;">Applicant Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+        <p><strong>Details:</strong></p>
+        <p style="background-color: white; padding: 10px; border-radius: 4px;">${details}</p>
+      </div>
+
+      <p><strong>Action Required:</strong> Please review and approve/reject this application in the admin panel.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        PAI Admin Notification System
+      </p>
+    </div>
+  `;
+
+  try {
+    // Send email to user
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "PAI Membership Application Received",
+      html: userEmailContent,
+    });
+
+    // Send email to base
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: BASE_EMAIL,
+      subject: `New Membership Application - ${userName} (#${requestId})`,
+      html: adminEmailContent,
+    });
+
+    console.log(`Membership request emails sent for request #${requestId}`);
+  } catch (error) {
+    console.error("Error sending membership request emails:", error);
+    // Don't throw error - we don't want to block the request if email fails
+  }
+}
+
+// Send insurance request notification
+export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
+  const { userName, userEmail, phone, insurancePlan, coverage, premium, comments, requestId } = data;
+
+  const userEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #9333ea;">PAI Insurance Request Received</h2>
+      <p>Dear ${userName},</p>
+      <p>Thank you for requesting insurance coverage. Your request has been received and is under review.</p>
+      
+      <div style="background-color: #faf5ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #7e22ce;">Insurance Request Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Plan:</strong> ${insurancePlan}</p>
+        <p><strong>Coverage:</strong> ${coverage}</p>
+        <p><strong>Premium:</strong> ${premium}/year</p>
+      </div>
+
+      <h3 style="color: #7e22ce;">Next Steps:</h3>
+      <ol>
+        <li>Our admin team will review your request</li>
+        <li>You will receive a QR code via email for payment</li>
+        <li>Share the payment screenshot with admin/base</li>
+        <li>Your insurance policy will be activated upon verification</li>
+      </ol>
+
+      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  const adminEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #9333ea;">New Insurance Request</h2>
+      <p>A new insurance request has been submitted.</p>
+      
+      <div style="background-color: #faf5ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #7e22ce;">Request Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Plan:</strong> ${insurancePlan}</p>
+        <p><strong>Coverage:</strong> ${coverage}</p>
+        <p><strong>Premium:</strong> ${premium}/year</p>
+        <p><strong>Comments:</strong></p>
+        <p style="background-color: white; padding: 10px; border-radius: 4px;">${comments}</p>
+      </div>
+
+      <p><strong>Action Required:</strong> Please review and approve/reject this request in the admin panel.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        PAI Admin Notification System
+      </p>
+    </div>
+  `;
+
+  try {
+    // Send email to user
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "PAI Insurance Request Received",
+      html: userEmailContent,
+    });
+
+    // Send email to base
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: BASE_EMAIL,
+      subject: `New Insurance Request - ${userName} - ${insurancePlan} (#${requestId})`,
+      html: adminEmailContent,
+    });
+
+    console.log(`Insurance request emails sent for request #${requestId}`);
+  } catch (error) {
+    console.error("Error sending insurance request emails:", error);
+  }
+}
+
+// Send rating upgrade request notification
+export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEmail) {
+  const { userName, userEmail, phone, currentRating, requestedRating, details, requestId } = data;
+
+  const userEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #f97316;">PAI Rating Upgrade Request Received</h2>
+      <p>Dear ${userName},</p>
+      <p>Thank you for requesting a pilot rating upgrade. Your request has been received and is under review.</p>
+      
+      <div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #ea580c;">Rating Upgrade Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+        <p><strong>Requested Rating:</strong> ${requestedRating}</p>
+      </div>
+
+      <h3 style="color: #ea580c;">Next Steps:</h3>
+      <ol>
+        <li>Our admin team will review your request and qualifications</li>
+        <li>You will receive a QR code via email for the upgrade fee payment</li>
+        <li>Share the payment screenshot with admin/base</li>
+        <li>Your rating will be upgraded upon approval and verification</li>
+      </ol>
+
+      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  const adminEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #f97316;">New Rating Upgrade Request</h2>
+      <p>A new rating upgrade request has been submitted.</p>
+      
+      <div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #ea580c;">Request Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+        <p><strong>Requested Rating:</strong> ${requestedRating}</p>
+        <p><strong>Justification:</strong></p>
+        <p style="background-color: white; padding: 10px; border-radius: 4px;">${details}</p>
+      </div>
+
+      <p><strong>Action Required:</strong> Please review the pilot's qualifications and approve/reject this request in the admin panel.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        PAI Admin Notification System
+      </p>
+    </div>
+  `;
+
+  try {
+    // Send email to user
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "PAI Rating Upgrade Request Received",
+      html: userEmailContent,
+    });
+
+    // Send email to base
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: BASE_EMAIL,
+      subject: `New Rating Upgrade Request - ${userName} (${currentRating} → ${requestedRating}) (#${requestId})`,
+      html: adminEmailContent,
+    });
+
+    console.log(`Rating upgrade request emails sent for request #${requestId}`);
+  } catch (error) {
+    console.error("Error sending rating upgrade request emails:", error);
+  }
+}
