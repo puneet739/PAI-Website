@@ -37,14 +37,31 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export async function action({ request }: Route.ActionArgs) {
   const userId = await requireUserId(request);
+  const member = await getMemberById(userId);
+  
+  if (!member) {
+    return { error: "Member not found" };
+  }
+
   const formData = await request.formData();
   const action = formData.get("_action");
 
-  if (action === "purchase") {
-    const policyType = formData.get("policyType");
+  if (action === "request_insurance") {
+    const insurancePlan = formData.get("insurancePlan");
+    const phone = formData.get("phone");
+    const email = formData.get("email");
+    const comments = formData.get("comments");
     
-    if (typeof policyType !== "string") {
-      return { error: "Invalid policy type" };
+    if (typeof insurancePlan !== "string" || !insurancePlan) {
+      return { error: "Please select an insurance plan" };
+    }
+
+    if (typeof phone !== "string" || !phone) {
+      return { error: "Phone number is required" };
+    }
+
+    if (typeof email !== "string" || !email) {
+      return { error: "Email is required" };
     }
 
     // Define policy details
@@ -54,21 +71,28 @@ export async function action({ request }: Route.ActionArgs) {
       comprehensive: { coverage: 10000000, premium: 10000 },
     };
 
-    const details = policyDetails[policyType];
+    const details = policyDetails[insurancePlan];
     if (!details) {
-      return { error: "Invalid policy type" };
+      return { error: "Invalid insurance plan" };
     }
 
-    // Generate policy number
-    const policyNumber = `PAI-INS-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-
-    // Create new policy
-    await query(
-      "INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES (?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active')",
-      [userId, policyNumber, policyType, details.coverage, details.premium]
+    // Check if user already has a pending insurance request
+    const existingRequest = await query(
+      "SELECT id FROM member_requests WHERE member_id = ? AND status = 'pending' AND request_type = 'insurance' LIMIT 1",
+      [userId]
     );
 
-    return { success: "Insurance policy purchased successfully!" };
+    if (existingRequest.length > 0) {
+      return { error: "You already have a pending insurance request" };
+    }
+
+    // Create insurance request
+    await query(
+      "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, insurance_type, coverage_amount, status) VALUES (?, 'insurance', ?, ?, ?, ?, ?, ?, 'pending')",
+      [userId, member.name, email, phone, comments || 'Insurance application', insurancePlan, details.coverage]
+    );
+
+    return redirect("/dashboard?insurance=requested");
   }
 
   return null;
@@ -147,7 +171,7 @@ Generated on: ${new Date().toLocaleString('en-IN')}
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/insurance" />
+      <DashboardSidebar currentPath="/insurance" userRole={member.membership_type} />
 
       {/* Main Content */}
       <div className="flex-1">
@@ -171,12 +195,6 @@ Generated on: ${new Date().toLocaleString('en-IN')}
             Protect yourself with comprehensive paragliding insurance coverage
           </p>
         </div>
-
-        {actionData?.success && (
-          <div className="mb-6 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
-            <p className="text-sm text-green-800 dark:text-green-200">{actionData.success}</p>
-          </div>
-        )}
 
         {actionData?.error && (
           <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
@@ -281,152 +299,133 @@ Generated on: ${new Date().toLocaleString('en-IN')}
             )}
           </div>
 
-          {/* Purchase Plans */}
+          {/* Insurance Request Form */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm sticky top-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Available Plans</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Request Insurance</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Fill out the form below to request insurance coverage</p>
               
               <Form method="post" className="space-y-4">
-                <input type="hidden" name="_action" value="purchase" />
+                <input type="hidden" name="_action" value="request_insurance" />
                 
-                {/* Basic Plan */}
-                <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-sky-500 dark:hover:border-sky-500 transition">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Basic</h4>
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">Starter</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">₹2,000</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">per year</p>
-                  <ul className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      ₹20 Lakh coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Accident coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Emergency assistance
-                    </li>
-                  </ul>
-                  <button
-                    type="submit"
-                    name="policyType"
-                    value="basic"
-                    disabled={activePolicy?.policy_type === 'basic'}
-                    className="w-full py-2 px-4 rounded-full border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                {/* Insurance Plan Dropdown */}
+                <div>
+                  <label htmlFor="insurancePlan" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Insurance Plan <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="insurancePlan"
+                    name="insurancePlan"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                   >
-                    {activePolicy?.policy_type === 'basic' ? 'Current Plan' : 'Select Plan'}
-                  </button>
+                    <option value="">Select a plan</option>
+                    <option value="basic">Basic - ₹2,000/year (₹20L coverage)</option>
+                    <option value="premium">Premium - ₹5,000/year (₹50L coverage)</option>
+                    <option value="comprehensive">Comprehensive - ₹10,000/year (₹1Cr coverage)</option>
+                  </select>
                 </div>
 
-                {/* Premium Plan */}
-                <div className="p-4 rounded-lg border-2 border-sky-500 dark:border-sky-500 relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-sky-500 text-white text-xs font-semibold rounded-full">
-                    Popular
-                  </div>
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Premium</h4>
-                    <span className="text-xs px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300">Recommended</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">₹5,000</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">per year</p>
-                  <ul className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      ₹50 Lakh coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Full accident coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      24/7 emergency assistance
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Equipment coverage
-                    </li>
-                  </ul>
-                  <button
-                    type="submit"
-                    name="policyType"
-                    value="premium"
-                    disabled={activePolicy?.policy_type === 'premium'}
-                    className="w-full py-2 px-4 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  >
-                    {activePolicy?.policy_type === 'premium' ? 'Current Plan' : 'Select Plan'}
-                  </button>
+                {/* Phone Number */}
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    defaultValue={member.phone || ""}
+                    placeholder="+91-XXXXXXXXXX"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                  />
                 </div>
 
-                {/* Comprehensive Plan */}
-                <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-orange-500 dark:hover:border-orange-500 transition">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Comprehensive</h4>
-                    <span className="text-xs px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300">Pro</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">₹10,000</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">per year</p>
-                  <ul className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      ₹1 Crore coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Complete accident coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Priority emergency response
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Full equipment coverage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      International coverage
-                    </li>
-                  </ul>
-                  <button
-                    type="submit"
-                    name="policyType"
-                    value="comprehensive"
-                    disabled={activePolicy?.policy_type === 'comprehensive'}
-                    className="w-full py-2 px-4 rounded-full border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  >
-                    {activePolicy?.policy_type === 'comprehensive' ? 'Current Plan' : 'Select Plan'}
-                  </button>
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    defaultValue={member.email}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                  />
                 </div>
+
+                {/* Comments */}
+                <div>
+                  <label htmlFor="comments" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Additional Comments
+                  </label>
+                  <textarea
+                    id="comments"
+                    name="comments"
+                    rows={3}
+                    placeholder="Any additional information or special requirements..."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white resize-none"
+                  />
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-xs text-blue-800 dark:text-blue-300">
+                    <strong>Note:</strong> Your request will be reviewed by our admin team. You will receive a QR code via email for payment. Once payment is verified, your insurance will be activated.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white font-medium hover:opacity-95 transition"
+                >
+                  Submit Insurance Request
+                </button>
               </Form>
+            </div>
+          </div>
+        </div>
+
+        {/* Plan Comparison */}
+        <div className="mt-8 bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Plan Comparison</h3>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Basic Plan Info */}
+            <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Basic</h4>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹2,000/year</p>
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                <li>• ₹20 Lakh coverage</li>
+                <li>• Accident coverage</li>
+                <li>• Emergency assistance</li>
+              </ul>
+            </div>
+
+            {/* Premium Plan Info */}
+            <div className="p-4 rounded-lg border-2 border-sky-500 dark:border-sky-500">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Premium</h4>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹5,000/year</p>
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                <li>• ₹50 Lakh coverage</li>
+                <li>• Full accident coverage</li>
+                <li>• 24/7 emergency assistance</li>
+                <li>• Equipment coverage</li>
+              </ul>
+            </div>
+
+            {/* Comprehensive Plan Info */}
+            <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Comprehensive</h4>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹10,000/year</p>
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                <li>• ₹1 Crore coverage</li>
+                <li>• Complete accident coverage</li>
+                <li>• Priority emergency response</li>
+                <li>• Full equipment coverage</li>
+                <li>• International coverage</li>
+              </ul>
             </div>
           </div>
         </div>

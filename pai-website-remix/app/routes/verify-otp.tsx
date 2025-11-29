@@ -1,10 +1,8 @@
 import type { Route } from "./+types/verify-otp";
-import { Form, redirect, useActionData, useLoaderData } from "react-router";
-import { getSession, commitSession, destroySession } from "~/lib/session.server";
-import { createMember } from "~/lib/auth.server";
-import { createUserSession } from "~/lib/session.server";
+import { Form, redirect, useActionData } from "react-router";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  const { getSession } = await import("~/lib/session.server");
   const session = await getSession(request.headers.get("Cookie"));
   const email = session.get("registrationEmail");
 
@@ -16,6 +14,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  const { getSession } = await import("~/lib/session.server");
+  const { createMember } = await import("~/lib/auth.server");
+  const { createUserSession } = await import("~/lib/session.server");
+  
   const session = await getSession(request.headers.get("Cookie"));
   const email = session.get("registrationEmail");
 

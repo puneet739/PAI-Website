@@ -27,7 +27,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     "SELECT id, title, event_type, location, start_date, end_date FROM events WHERE start_date >= CURDATE() AND is_published = TRUE ORDER BY start_date ASC LIMIT 5"
   );
 
-  return { member, upcomingEvents };
+  // Check for success messages
+  const url = new URL(request.url);
+  const applicationSuccess = url.searchParams.get("application") === "success";
+  const insuranceRequested = url.searchParams.get("insurance") === "requested";
+
+  return { member, upcomingEvents, applicationSuccess, insuranceRequested };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -38,7 +43,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents } = loaderData;
+  const { member, upcomingEvents, applicationSuccess, insuranceRequested } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
@@ -72,7 +77,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/dashboard" />
+      <DashboardSidebar currentPath="/dashboard" userRole={member.membership_type} />
 
       {/* Main Content */}
       <div className="flex-1">
@@ -96,6 +101,77 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             Here's your PAI member overview
           </p>
         </div>
+
+        {/* Success Messages */}
+        {applicationSuccess && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Application Submitted Successfully!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your membership application has been submitted and is pending review. You will receive a QR code via email for payment. Once payment is verified, your membership will be activated.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {insuranceRequested && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Insurance Request Submitted!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your insurance request has been submitted and is pending admin approval. You will receive a QR code via email for payment. Once payment is verified, your insurance policy will be activated.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Inactive Status Alert */}
+        {member.membership_status === 'inactive' && (
+          <div className="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                  Membership Inactive
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-4">
+                  Your membership is currently inactive. Apply for membership activation to access all PAI benefits and services.
+                </p>
+                <a
+                  href="/apply-membership"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Apply for Membership
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid gap-6 md:grid-cols-2 mb-8">

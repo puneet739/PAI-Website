@@ -151,6 +151,33 @@ CREATE TABLE IF NOT EXISTS test_results (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Member requests table (for all types of requests)
+CREATE TABLE IF NOT EXISTS member_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    request_type ENUM('new_membership', 'insurance', 'rating_upgrade', 'renewal') NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    details TEXT,
+    current_rating VARCHAR(50),
+    requested_rating VARCHAR(50),
+    insurance_type VARCHAR(50),
+    coverage_amount DECIMAL(10,2),
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    admin_notes TEXT,
+    processed_by INT,
+    processed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    FOREIGN KEY (processed_by) REFERENCES members(id) ON DELETE SET NULL,
+    INDEX idx_member_id (member_id),
+    INDEX idx_status (status),
+    INDEX idx_request_type (request_type),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Insert sample data for flying sites
 INSERT INTO flying_sites (name, location, state, description, difficulty_level, is_active) VALUES
 ('Bir Billing', 'Bir, Kangra', 'Himachal Pradesh', 'The Himalayan mecca for XC and soaring, with world-class conditions.', 'advanced', TRUE),
@@ -164,7 +191,8 @@ INSERT INTO flying_sites (name, location, state, description, difficulty_level, 
 INSERT INTO members (email, password_hash, name, phone, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours) VALUES
 ('admin@pai.org.in', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'PAI Admin', '+91-9876543210', 'instructor', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'Instructor', 250, 450.50),
 ('pilot@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'John Pilot', '+91-9876543211', 'premium', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'P4', 85, 120.75),
-('beginner@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Sarah Beginner', '+91-9876543212', 'basic', 'active', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'P2', 15, 22.50);
+('beginner@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Sarah Beginner', '+91-9876543212', 'basic', 'active', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'P2', 15, 22.50),
+('puneet739@gmail.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Puneet', NULL, 'basic', 'inactive', NULL, 'P1', 0, 0.00);
 
 -- Insert sample insurance policies
 INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES

@@ -1,0 +1,28 @@
+P1, P2, P3 
+
+Plan A: 
+how money is taken. for time being: 
+
+	User will apply first, After his eligibility Check. 
+		Manual process: we will share the QR code with user over email. Once received payment, he will be member. 
+		user will pay to individual QR. Share the screenshot with admin/base. 
+	
+
+
+1. Admin who approves or changes anyones rating. 
+2. Insurance
+
+Insurance:
+		If user is ActiveMember, he will apply for insurance. 
+		we will share the QR over mail, once payment done. 
+		Admin/Base will proceed with insurance provider. 
+		On successfull, Admin will add insurance details on PAI website. 
+
+Rating Upgrade: 
+	User will apply first, After his eligibility Check. 
+		Manual process: we will share the QR code with user over email. Once received payment, he will be member. 
+			user will pay to individual QR. Share the screenshot with admin/base.
+	ADmin/Base will update its rating from backend. 
+
+
+Plan B: 

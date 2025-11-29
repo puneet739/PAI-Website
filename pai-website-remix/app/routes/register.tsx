@@ -1,13 +1,14 @@
 import type { Route } from "./+types/register";
 import { Form, redirect, useActionData } from "react-router";
-import { getMemberByEmail } from "~/lib/auth.server";
-import { getSession, commitSession } from "~/lib/session.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   return null;
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  const { getMemberByEmail } = await import("~/lib/auth.server");
+  const { getSession, commitSession } = await import("~/lib/session.server");
+  
   const formData = await request.formData();
   const email = formData.get("email");
 

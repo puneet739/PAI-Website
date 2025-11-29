@@ -10,5 +10,7 @@ export default [
   route("tests", "routes/tests.tsx"),
   route("tests/:level", "routes/tests.$level.tsx"),
   route("tests/results", "routes/tests.results.tsx"),
+  route("apply-membership", "routes/apply-membership.tsx"),
+  route("admin", "routes/admin.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;
