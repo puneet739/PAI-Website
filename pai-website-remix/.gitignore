@@ -5,3 +5,8 @@
 # React Router
 /.react-router/
 /build/
+
+# Test Coverage
+/coverage/
+*.lcov
+.vitest/
