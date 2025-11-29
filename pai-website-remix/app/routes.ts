@@ -8,6 +8,7 @@ export default [
   route("forgot-password", "routes/forgot-password.tsx"),
   route("verify-password-reset", "routes/verify-password-reset.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
+  route("my-requests", "routes/my-requests.tsx"),
   route("insurance", "routes/insurance.tsx"),
   route("tests", "routes/tests.tsx"),
   route("tests/:level", "routes/tests.$level.tsx"),
