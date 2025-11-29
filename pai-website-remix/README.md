@@ -1,8 +1,6 @@
-# Welcome to React Router!
+# PAI – Paragliding Association of India
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Official website for the Paragliding Association of India, built with React Router and Tailwind CSS.
 
 ## Features
 
@@ -46,14 +44,38 @@ npm run build
 
 ### Docker Deployment
 
-To build and run using Docker:
+#### Quick Start with Docker Compose (Recommended)
 
 ```bash
-docker build -t my-app .
+# Build and start the container
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+The application will be available at `http://localhost:3000`
+
+#### Using Docker Commands
+
+```bash
+# Build the image
+docker build -t pai-website .
 
 # Run the container
-docker run -p 3000:3000 my-app
+docker run -d -p 3000:3000 --name pai-website pai-website
+
+# View logs
+docker logs -f pai-website
+
+# Stop and remove
+docker stop pai-website && docker rm pai-website
 ```
+
+📖 For detailed Docker instructions, see [DOCKER.md](./DOCKER.md)
 
 The containerized application can be deployed to any platform that supports Docker, including:
 
