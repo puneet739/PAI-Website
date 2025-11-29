@@ -10,6 +10,10 @@ Official website for the Paragliding Association of India, built with React Rout
 - 🔄 Data loading and mutations
 - 🔒 TypeScript by default
 - 🎉 TailwindCSS for styling
+- 🗄️ MySQL 8.0 database with Docker
+- 🔐 Complete authentication system (login, sessions, dashboard)
+- 👤 User dashboard with member statistics
+- 🐳 Full Docker & Docker Compose support
 - 📖 [React Router docs](https://reactrouter.com/)
 
 ## Getting Started
@@ -76,6 +80,10 @@ docker stop pai-website && docker rm pai-website
 ```
 
 📖 For detailed Docker instructions, see [DOCKER.md](./DOCKER.md)
+
+📖 For database documentation, see [DATABASE.md](./DATABASE.md)
+
+📖 For authentication system documentation, see [AUTH.md](./AUTH.md)
 
 The containerized application can be deployed to any platform that supports Docker, including:
 

@@ -12,17 +12,26 @@ This guide explains how to build and run the PAI Website using Docker.
 ### Option 1: Using Docker Compose (Recommended)
 
 ```bash
-# Build and start the container
+# Build and start all services (app + MySQL)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
-# Stop the container
+# View specific service logs
+docker-compose logs -f pai-website
+docker-compose logs -f mysql
+
+# Stop all services
 docker-compose down
+
+# Stop and remove volumes (deletes database data)
+docker-compose down -v
 ```
 
 The application will be available at **http://localhost:3000**
+
+The MySQL database will be available at **localhost:3306**
 
 ### Option 2: Using Docker Commands
 
@@ -52,6 +61,41 @@ The Dockerfile uses a multi-stage build for optimization:
 3. **build-env**: Builds the React Router application
 4. **Final stage**: Creates a minimal production image with only necessary files
 
+## Services
+
+The docker-compose setup includes:
+
+1. **pai-website**: The React Router application
+   - Port: 3000
+   - Depends on MySQL database
+   - Auto-restarts on failure
+
+2. **mysql**: MySQL 8.0 database
+   - Port: 3306
+   - Database: `pai_db`
+   - User: `pai_user` / Password: `pai_password`
+   - Persistent data storage
+   - Health checks enabled
+
+## Database Access
+
+### Connect to MySQL CLI
+```bash
+docker exec -it pai-mysql mysql -u pai_user -ppai_password pai_db
+```
+
+### Database Credentials
+```
+Host: localhost (from host) or mysql (from app container)
+Port: 3306
+Database: pai_db
+User: pai_user
+Password: pai_password
+Root Password: root_password
+```
+
+See [DATABASE.md](./DATABASE.md) for complete database documentation.
+
 ## Environment Variables
 
 You can customize the application by passing environment variables:
@@ -60,6 +104,7 @@ You can customize the application by passing environment variables:
 docker run -d \
   -p 3000:3000 \
   -e NODE_ENV=production \
+  -e DATABASE_URL=mysql://pai_user:pai_password@mysql:3306/pai_db \
   --name pai-website \
   pai-website
 ```

@@ -9,5 +9,41 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=mysql://pai_user:pai_password@mysql:3306/pai_db
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
     container_name: pai-website
+    networks:
+      - pai-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: pai-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=pai_db
+      - MYSQL_USER=pai_user
+      - MYSQL_PASSWORD=pai_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - pai-network
+
+networks:
+  pai-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
