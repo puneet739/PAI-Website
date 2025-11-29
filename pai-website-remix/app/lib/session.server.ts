@@ -30,6 +30,21 @@ export async function requireUserId(request: Request): Promise<number> {
   if (!userId) {
     throw redirect("/login");
   }
+  
+  // Verify user exists in database
+  const { getMemberById } = await import("~/lib/auth.server");
+  const member = await getMemberById(userId);
+  
+  if (!member) {
+    // User session exists but user not found in DB - logout and redirect
+    const session = await getSession(request.headers.get("Cookie"));
+    throw redirect("/login", {
+      headers: {
+        "Set-Cookie": await destroySession(session),
+      },
+    });
+  }
+  
   return userId;
 }
 

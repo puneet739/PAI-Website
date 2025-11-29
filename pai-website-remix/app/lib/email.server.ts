@@ -62,6 +62,16 @@ interface PasswordResetOTPEmail {
   otp: string;
 }
 
+interface MembershipRenewalEmail {
+  userName: string;
+  userEmail: string;
+  phone: string;
+  details: string;
+  currentRating: string;
+  expiryDate: string;
+  requestId: number;
+}
+
 // Send new membership request notification
 export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
   // Check if email is enabled
@@ -396,5 +406,98 @@ export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
   } catch (error) {
     console.error("Error sending password reset OTP email:", error);
     throw error; // Throw error for password reset as it's critical
+  }
+}
+
+// Send membership renewal request notification
+export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping membership renewal email.");
+    return;
+  }
+
+  const { userName, userEmail, phone, details, currentRating, expiryDate, requestId } = data;
+
+  const userEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">PAI Membership Renewal Request Received</h2>
+      <p>Dear ${userName},</p>
+      <p>Thank you for submitting your membership renewal request. Your request has been received and is under review.</p>
+      
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0284c7;">Renewal Request Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      </div>
+
+      <h3 style="color: #0284c7;">Next Steps:</h3>
+      <ol>
+        <li>Our admin team will review your renewal request</li>
+        <li>You will receive a QR code via email for payment</li>
+        <li>Share the payment screenshot with admin/base</li>
+        <li>Your membership will be renewed for 1 year upon verification</li>
+      </ol>
+
+      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  const adminEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Membership Renewal Request</h2>
+      <p>A membership renewal request has been submitted.</p>
+      
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0284c7;">Member Details</h3>
+        <p><strong>Request ID:</strong> #${requestId}</p>
+        <p><strong>Name:</strong> ${userName}</p>
+        <p><strong>Email:</strong> ${userEmail}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Current Rating:</strong> ${currentRating}</p>
+        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p><strong>Details:</strong></p>
+        <p style="background-color: white; padding: 10px; border-radius: 4px;">${details}</p>
+      </div>
+
+      <p><strong>Action Required:</strong> Please review and approve/reject this renewal request in the admin panel.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        PAI Admin Notification System
+      </p>
+    </div>
+  `;
+
+  try {
+    // Send email to user
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "PAI Membership Renewal Request Received",
+      html: userEmailContent,
+    });
+
+    // Send email to base
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: BASE_EMAIL,
+      subject: `Membership Renewal Request - ${userName} (#${requestId})`,
+      html: adminEmailContent,
+    });
+
+    console.log(`Membership renewal emails sent for request #${requestId}`);
+  } catch (error) {
+    console.error("Error sending membership renewal emails:", error);
   }
 }

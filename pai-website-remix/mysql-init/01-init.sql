@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS test_results (
 CREATE TABLE IF NOT EXISTS member_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     member_id INT NOT NULL,
-    request_type ENUM('new_membership', 'insurance', 'rating_upgrade', 'renewal') NOT NULL,
+    request_type ENUM('new_membership', 'insurance', 'rating_upgrade', 'membership_renewal') NOT NULL,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,

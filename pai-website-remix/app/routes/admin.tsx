@@ -124,6 +124,12 @@ export async function action({ request }: Route.ActionArgs) {
         "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
         [member_id]
       );
+    } else if (request_type === "membership_renewal") {
+      // Renew membership for 1 year from current date
+      await query(
+        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
+        [member_id]
+      );
     } else if (request_type === "insurance") {
       // Get insurance details from the request
       const insuranceDetails = await query<{ insurance_type: string; coverage_amount: number }>(

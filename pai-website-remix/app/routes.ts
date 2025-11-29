@@ -13,6 +13,7 @@ export default [
   route("tests/:level", "routes/tests.$level.tsx"),
   route("tests/results", "routes/tests.results.tsx"),
   route("apply-membership", "routes/apply-membership.tsx"),
+  route("renew-membership", "routes/renew-membership.tsx"),
   route("upgrade-rating", "routes/upgrade-rating.tsx"),
   route("reset-password", "routes/reset-password.tsx"),
   route("upload-profile-image", "routes/upload-profile-image.tsx"),

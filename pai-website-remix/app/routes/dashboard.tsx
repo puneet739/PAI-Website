@@ -33,8 +33,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const insuranceRequested = url.searchParams.get("insurance") === "requested";
   const ratingRequested = url.searchParams.get("rating") === "requested";
   const imageUpdated = url.searchParams.get("image") === "updated";
+  const renewalRequested = url.searchParams.get("renewal") === "requested";
 
-  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated };
+  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -45,7 +46,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated } = loaderData;
+  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
@@ -183,6 +184,26 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 </h3>
                 <p className="text-sm text-green-800 dark:text-green-300">
                   Your profile image has been updated successfully.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {renewalRequested && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Membership Renewal Request Submitted!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your membership renewal request has been submitted and is pending admin review. You will receive a QR code via email for payment. Once approved and payment is verified, your membership will be renewed for 1 year.
                 </p>
               </div>
             </div>
