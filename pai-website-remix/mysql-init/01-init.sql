@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS members (
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
-    profile_image MEDIUMBLOB,
+    profile_image LONGTEXT,
     membership_type ENUM('basic', 'premium', 'instructor') DEFAULT 'basic',
     membership_status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
     active_until DATE NULL,
@@ -199,6 +199,14 @@ INSERT INTO members (email, password_hash, name, phone, membership_type, members
 INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES
 (2, 'PAI-INS-2024-001', 'premium', 5000000.00, 5000.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active'),
 (3, 'PAI-INS-2024-002', 'basic', 2000000.00, 2000.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active');
+
+-- Insert sample events
+INSERT INTO events (title, description, event_type, location, start_date, end_date, registration_deadline, max_participants, is_published) VALUES
+('Panchgani Paragliding Festival 2025', 'Join us for an exciting weekend of paragliding in the beautiful hills of Panchgani. This event features tandem flights, competitions, and workshops for pilots of all levels. Experience the thrill of flying over the scenic Western Ghats with fellow enthusiasts.', 'competition', 'Panchgani, Maharashtra', DATE_ADD(CURDATE(), INTERVAL 45 DAY), DATE_ADD(CURDATE(), INTERVAL 47 DAY), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 100, TRUE),
+('Bir Billing XC Camp', 'Advanced cross-country flying camp in Bir Billing. Learn XC techniques, route planning, and safety procedures from experienced instructors. Perfect for P3 and P4 pilots looking to improve their distance flying skills.', 'training', 'Bir Billing, Himachal Pradesh', DATE_ADD(CURDATE(), INTERVAL 60 DAY), DATE_ADD(CURDATE(), INTERVAL 67 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY), 25, TRUE),
+('Kamshet Safety Workshop', 'Comprehensive safety workshop covering emergency procedures, SIV training, and risk management. Open to all pilot ratings. Learn from certified instructors and improve your safety awareness.', 'safety', 'Kamshet, Maharashtra', DATE_ADD(CURDATE(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 50, TRUE),
+('PAI Annual Gathering', 'Annual social gathering for all PAI members. Network with fellow pilots, share experiences, and enjoy presentations on the latest in paragliding technology and techniques. Dinner and entertainment included.', 'social', 'Mumbai, Maharashtra', DATE_ADD(CURDATE(), INTERVAL 90 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), DATE_ADD(CURDATE(), INTERVAL 75 DAY), 200, TRUE),
+('Yelagiri Beginner Flying Week', 'Week-long training program for P1 and P2 pilots. Focus on ground handling, basic flight techniques, and building confidence. Ideal for new pilots looking to gain more experience in a supportive environment.', 'training', 'Yelagiri, Tamil Nadu', DATE_ADD(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 37 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY), 30, TRUE);
 
 -- Insert sample test questions for P1 level
 INSERT INTO test_questions (test_level, question, option_a, option_b, option_c, option_d, correct_answer) VALUES
