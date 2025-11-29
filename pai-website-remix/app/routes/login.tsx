@@ -1,7 +1,5 @@
 import type { Route } from "./+types/login";
 import { Form, redirect, useActionData } from "react-router";
-import { verifyLogin } from "~/lib/auth.server";
-import { createUserSession, getUserId } from "~/lib/session.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { getUserId } = await import("~/lib/session.server");
@@ -32,6 +30,9 @@ export async function action({ request }: Route.ActionArgs) {
     };
   }
 
+  const { verifyLogin } = await import("~/lib/auth.server");
+  const { createUserSession } = await import("~/lib/session.server");
+  
   const member = await verifyLogin(email, password);
 
   if (!member) {
