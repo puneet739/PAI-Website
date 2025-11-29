@@ -102,6 +102,55 @@ CREATE TABLE IF NOT EXISTS contact_inquiries (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Insurance policies table
+CREATE TABLE IF NOT EXISTS insurance_policies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    policy_number VARCHAR(50) UNIQUE NOT NULL,
+    policy_type ENUM('basic', 'premium', 'comprehensive') DEFAULT 'basic',
+    coverage_amount DECIMAL(10,2) NOT NULL,
+    premium_amount DECIMAL(10,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status ENUM('active', 'expired', 'cancelled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    INDEX idx_member_id (member_id),
+    INDEX idx_status (status),
+    INDEX idx_end_date (end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Test questions table
+CREATE TABLE IF NOT EXISTS test_questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    test_level ENUM('P1', 'P2', 'P3', 'P4') NOT NULL,
+    question TEXT NOT NULL,
+    option_a VARCHAR(255) NOT NULL,
+    option_b VARCHAR(255) NOT NULL,
+    option_c VARCHAR(255) NOT NULL,
+    option_d VARCHAR(255) NOT NULL,
+    correct_answer ENUM('A', 'B', 'C', 'D') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_test_level (test_level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Test results table
+CREATE TABLE IF NOT EXISTS test_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    test_level ENUM('P1', 'P2', 'P3', 'P4') NOT NULL,
+    score INT NOT NULL,
+    total_questions INT NOT NULL,
+    passed BOOLEAN DEFAULT FALSE,
+    time_taken INT NOT NULL COMMENT 'Time taken in seconds',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    INDEX idx_member_id (member_id),
+    INDEX idx_test_level (test_level),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Insert sample data for flying sites
 INSERT INTO flying_sites (name, location, state, description, difficulty_level, is_active) VALUES
 ('Bir Billing', 'Bir, Kangra', 'Himachal Pradesh', 'The Himalayan mecca for XC and soaring, with world-class conditions.', 'advanced', TRUE),
@@ -116,6 +165,83 @@ INSERT INTO members (email, password_hash, name, phone, membership_type, members
 ('admin@pai.org.in', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'PAI Admin', '+91-9876543210', 'instructor', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'Instructor', 250, 450.50),
 ('pilot@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'John Pilot', '+91-9876543211', 'premium', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'P4', 85, 120.75),
 ('beginner@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Sarah Beginner', '+91-9876543212', 'basic', 'active', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'P2', 15, 22.50);
+
+-- Insert sample insurance policies
+INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES
+(2, 'PAI-INS-2024-001', 'premium', 5000000.00, 5000.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active'),
+(3, 'PAI-INS-2024-002', 'basic', 2000000.00, 2000.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active');
+
+-- Insert sample test questions for P1 level
+INSERT INTO test_questions (test_level, question, option_a, option_b, option_c, option_d, correct_answer) VALUES
+('P1', 'What is the minimum age requirement for paragliding in India?', '16 years', '18 years', '21 years', '25 years', 'B'),
+('P1', 'What does the term "thermal" refer to in paragliding?', 'Cold air current', 'Rising column of warm air', 'Wind from the sea', 'Mountain breeze', 'B'),
+('P1', 'Which equipment is NOT essential for paragliding?', 'Helmet', 'Reserve parachute', 'GPS device', 'Harness', 'C'),
+('P1', 'What is the primary purpose of a variometer?', 'Measure speed', 'Indicate altitude changes', 'Show direction', 'Measure temperature', 'B'),
+('P1', 'What should you do before every flight?', 'Check social media', 'Pre-flight safety check', 'Eat a heavy meal', 'Take a selfie', 'B'),
+('P1', 'What is the correct term for the fabric wing of a paraglider?', 'Sail', 'Canopy', 'Sheet', 'Cover', 'B'),
+('P1', 'Which wind condition is generally safest for beginner pilots?', 'Strong gusty winds', 'Light steady winds', 'No wind at all', 'Turbulent winds', 'B'),
+('P1', 'What does "ground handling" mean?', 'Landing technique', 'Practicing wing control on the ground', 'Carrying the equipment', 'Packing the wing', 'B'),
+('P1', 'What is the purpose of the reserve parachute?', 'Extra storage', 'Emergency backup', 'Decoration', 'Weather protection', 'B'),
+('P1', 'What should be your first action if you experience a collapse?', 'Panic', 'Apply brake and weight shift', 'Close your eyes', 'Let go of controls', 'B'),
+('P1', 'What is the recommended action in strong turbulence?', 'Speed up', 'Maintain control and find calmer air', 'Do aerobatics', 'Close the wing', 'B'),
+('P1', 'Which weather condition is most dangerous for paragliding?', 'Clear skies', 'Thunderstorms', 'Light clouds', 'Morning dew', 'B'),
+('P1', 'What does "aspect ratio" refer to in paragliding?', 'Pilot weight', 'Wing span to chord ratio', 'Flight duration', 'Altitude range', 'B'),
+('P1', 'What is the primary function of the harness?', 'Storage', 'Connect pilot to wing', 'Weather protection', 'Communication', 'B'),
+('P1', 'When should you NOT fly?', 'In the morning', 'During thunderstorms', 'With friends', 'On weekends', 'B');
+
+-- Insert sample test questions for P2 level
+INSERT INTO test_questions (test_level, question, option_a, option_b, option_c, option_d, correct_answer) VALUES
+('P2', 'What is the glide ratio of a typical beginner paraglider?', '3:1', '6:1', '9:1', '12:1', 'C'),
+('P2', 'What causes a "frontal collapse"?', 'Too much brake', 'Sudden decrease in angle of attack', 'Flying too slow', 'Heavy landing', 'B'),
+('P2', 'What is "ridge soaring"?', 'Flying in valleys', 'Using wind deflected upward by terrain', 'Flying at high altitude', 'Thermal flying', 'B'),
+('P2', 'What is the purpose of the speed bar?', 'Increase speed', 'Decrease speed', 'Turn faster', 'Climb higher', 'A'),
+('P2', 'What does "active flying" mean?', 'Doing aerobatics', 'Constantly adjusting controls for stability', 'Flying fast', 'Competitive flying', 'B'),
+('P2', 'What is a "cravat"?', 'A type of harness', 'Wing tip caught in lines', 'Landing technique', 'Weather condition', 'B'),
+('P2', 'What is the recommended recovery technique for a spiral dive?', 'Pull both brakes hard', 'Release outer brake and weight shift', 'Speed up', 'Deploy reserve', 'B'),
+('P2', 'What is "wind gradient"?', 'Wind direction change', 'Wind speed increase with altitude', 'Wind temperature', 'Wind pressure', 'B'),
+('P2', 'What is the minimum safe altitude for practicing maneuvers?', '50 meters', '100 meters', '300 meters', '1000 meters', 'D'),
+('P2', 'What causes "rotor turbulence"?', 'Thermal activity', 'Wind flowing over obstacles', 'Rain', 'High altitude', 'B'),
+('P2', 'What is "big ears" technique used for?', 'Increase speed', 'Rapid descent', 'Better hearing', 'Turning', 'B'),
+('P2', 'What is the purpose of trim tabs?', 'Adjust wing angle', 'Store equipment', 'Measure wind', 'Communication', 'A'),
+('P2', 'What is "pendulum effect"?', 'Swinging motion after pitch', 'Type of landing', 'Wind condition', 'Thermal indicator', 'A'),
+('P2', 'What should you do if you encounter sink?', 'Pull full brakes', 'Speed up and find lift', 'Land immediately', 'Deploy reserve', 'B'),
+('P2', 'What is the purpose of wingtip steering?', 'Emergency control', 'Fine directional control', 'Speed control', 'Altitude control', 'B');
+
+-- Insert sample test questions for P3 level
+INSERT INTO test_questions (test_level, question, option_a, option_b, option_c, option_d, correct_answer) VALUES
+('P3', 'What is the typical sink rate during a spiral dive?', '2 m/s', '5 m/s', '10 m/s', '20 m/s', 'C'),
+('P3', 'What is "dynamic soaring"?', 'Using thermals', 'Using wind shear for energy', 'Fast flying', 'Acrobatic flying', 'B'),
+('P3', 'What is the recommended action for a full stall?', 'Pull more brake', 'Release brakes symmetrically', 'Turn hard', 'Deploy reserve immediately', 'B'),
+('P3', 'What is "convergence" in meteorology?', 'Air masses meeting', 'Air temperature', 'Wind speed', 'Cloud formation', 'A'),
+('P3', 'What is the purpose of accelerated flight?', 'Show off', 'Increase penetration in headwind', 'Save fuel', 'Better visibility', 'B'),
+('P3', 'What is a "SAT" maneuver?', 'Safety test', 'Spiral Asymmetric Turn', 'Slow altitude technique', 'Standard approach turn', 'B'),
+('P3', 'What causes "deep stall"?', 'Too much speed', 'Excessive brake application', 'Wind shear', 'Equipment failure', 'B'),
+('P3', 'What is the purpose of an SIV course?', 'Speed training', 'Simulation of Incidents in Flight', 'Social flying', 'Site inspection', 'B'),
+('P3', 'What is "cloud suck"?', 'Cloud photography', 'Strong updraft pulling into cloud', 'Cloud formation', 'Weather prediction', 'B'),
+('P3', 'What is the minimum altitude for reserve deployment?', '20 meters', '50 meters', '100 meters', '200 meters', 'C'),
+('P3', 'What is "asymmetric collapse"?', 'Both sides collapse', 'One side of wing collapses', 'Full wing collapse', 'Tip collapse', 'B'),
+('P3', 'What is the purpose of "B-line stall"?', 'Emergency descent', 'Speed increase', 'Better glide', 'Thermal centering', 'A'),
+('P3', 'What is "venturi effect" in paragliding?', 'Wind acceleration through narrow spaces', 'Thermal formation', 'Wing design', 'Landing technique', 'A'),
+('P3', 'What is the recommended action in a cascade of collapses?', 'Keep trying to recover', 'Deploy reserve parachute', 'Speed up', 'Turn away', 'B'),
+('P3', 'What is "inversion layer"?', 'Temperature increases with altitude', 'Wind reversal', 'Cloud type', 'Landing zone', 'A');
+
+-- Insert sample test questions for P4 level
+INSERT INTO test_questions (test_level, question, option_a, option_b, option_c, option_d, correct_answer) VALUES
+('P4', 'What is the typical L/D ratio of a competition wing?', '6:1', '8:1', '10:1', '12:1', 'C'),
+('P4', 'What is "McCready theory"?', 'Weather prediction', 'Optimal speed to fly in varying conditions', 'Wing design principle', 'Safety protocol', 'B'),
+('P4', 'What is the purpose of "shark nose" design?', 'Aesthetics', 'Improved collapse resistance', 'Speed increase', 'Better landing', 'B'),
+('P4', 'What is "XC flying"?', 'Extreme conditions', 'Cross-country distance flying', 'Acrobatic flying', 'Competition format', 'B'),
+('P4', 'What is the function of mini-ribs?', 'Decoration', 'Improve aerodynamic efficiency', 'Reduce weight', 'Increase stability', 'B'),
+('P4', 'What is "optimized angle of attack"?', 'Best climb rate', 'Best glide ratio', 'Fastest speed', 'Safest angle', 'B'),
+('P4', 'What is the purpose of "3-liner" configuration?', 'Simplicity', 'Reduced drag and better performance', 'Easier packing', 'Lower cost', 'B'),
+('P4', 'What is "task optimization" in competitions?', 'Equipment setup', 'Route planning for best speed', 'Weather analysis', 'Team coordination', 'B'),
+('P4', 'What is "final glide"?', 'Last landing', 'Calculated glide to goal', 'Emergency descent', 'Competition finish', 'B'),
+('P4', 'What is the purpose of "ballast"?', 'Decoration', 'Increase wing loading for better penetration', 'Safety backup', 'Equipment storage', 'B'),
+('P4', 'What is "optimal cruise speed"?', 'Fastest speed', 'Speed for best distance in given conditions', 'Slowest safe speed', 'Competition speed', 'B'),
+('P4', 'What is "lift distribution" in wing design?', 'Weight placement', 'How lift varies across span', 'Thermal strength', 'Pilot position', 'B'),
+('P4', 'What is the purpose of "reflex profile"?', 'Better visibility', 'Improved stability and collapse resistance', 'Faster speed', 'Easier turning', 'B'),
+('P4', 'What is "polar curve"?', 'Flight path', 'Graph of sink rate vs airspeed', 'Turn radius', 'Thermal pattern', 'B'),
+('P4', 'What is "optimal load factor" in turns?', '1G', '1.5G', '2G', '3G', 'B');
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON pai_db.* TO 'pai_user'@'%';

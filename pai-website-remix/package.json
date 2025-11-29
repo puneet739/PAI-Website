@@ -6,7 +6,11 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "start:all": "./scripts/start.sh",
+    "start:docker": "./scripts/start-docker-only.sh",
+    "stop": "./scripts/stop.sh",
+    "reset": "./scripts/reset.sh"
   },
   "dependencies": {
     "@react-router/node": "^7.9.2",

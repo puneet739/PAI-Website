@@ -3,6 +3,7 @@ import { redirect } from "react-router";
 import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
+import { DashboardSidebar } from "~/components/DashboardSidebar";
 
 interface UpcomingEvent {
   id: number;
@@ -69,34 +70,23 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a href="/" className="text-xl font-bold bg-gradient-to-r from-sky-500 to-orange-500 bg-clip-text text-transparent">
-              PAI
-            </a>
-            <span className="text-gray-400">|</span>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <a href="/" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              Home
-            </a>
-            <form method="post" action="/logout">
-              <button
-                type="submit"
-                className="text-sm px-4 py-2 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                Logout
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar */}
+      <DashboardSidebar currentPath="/dashboard" />
 
-      <main className="container mx-auto px-4 py-8">
+      {/* Main Content */}
+      <div className="flex-1">
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
+          <div className="px-8 py-4 flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+            <a href="/" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              ← Back to Home
+            </a>
+          </div>
+        </header>
+
+        <main className="p-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -134,6 +124,31 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{member.pilot_rating}</p>
           </div>
+        </div>
+
+        {/* Insurance Card */}
+        <div className="mb-8">
+          <a 
+            href="/insurance"
+            className="block bg-gradient-to-r from-sky-500 to-orange-500 rounded-xl p-6 shadow-lg hover:shadow-xl transition group"
+          >
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Paragliding Insurance</h3>
+                  <p className="text-sm text-white/80">Manage your insurance policy</p>
+                </div>
+              </div>
+              <svg className="w-6 h-6 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </a>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -200,7 +215,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
