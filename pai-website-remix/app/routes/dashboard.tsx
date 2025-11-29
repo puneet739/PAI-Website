@@ -276,7 +276,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     {member.membership_type.charAt(0).toUpperCase() + member.membership_type.slice(1)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-3">
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
                   <span className={`text-xs px-3 py-1 rounded-full ${
                     member.membership_status === "active"
@@ -288,6 +288,15 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       : member.membership_status.charAt(0).toUpperCase() + member.membership_status.slice(1)
                     }
                   </span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Password</span>
+                  <a
+                    href="/reset-password"
+                    className="text-xs px-3 py-1.5 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/30 transition font-medium"
+                  >
+                    Reset Password
+                  </a>
                 </div>
               </div>
             </div>

@@ -5,6 +5,8 @@ export default [
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
   route("verify-otp", "routes/verify-otp.tsx"),
+  route("forgot-password", "routes/forgot-password.tsx"),
+  route("verify-password-reset", "routes/verify-password-reset.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
   route("insurance", "routes/insurance.tsx"),
   route("tests", "routes/tests.tsx"),
@@ -12,6 +14,7 @@ export default [
   route("tests/results", "routes/tests.results.tsx"),
   route("apply-membership", "routes/apply-membership.tsx"),
   route("upgrade-rating", "routes/upgrade-rating.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
   route("admin", "routes/admin.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;

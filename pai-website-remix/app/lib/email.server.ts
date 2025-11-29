@@ -48,6 +48,12 @@ interface RatingUpgradeRequestEmail {
   requestId: number;
 }
 
+interface PasswordResetOTPEmail {
+  userName: string;
+  userEmail: string;
+  otp: string;
+}
+
 // Send new membership request notification
 export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
   const { userName, userEmail, phone, details, currentRating, requestId } = data;
@@ -307,5 +313,56 @@ export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEm
     console.log(`Rating upgrade request emails sent for request #${requestId}`);
   } catch (error) {
     console.error("Error sending rating upgrade request emails:", error);
+  }
+}
+
+// Send password reset OTP email
+export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
+  const { userName, userEmail, otp } = data;
+
+  const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Password Reset Request</h2>
+      <p>Dear ${userName},</p>
+      <p>You have requested to reset your password for your PAI account.</p>
+      
+      <div style="background-color: #f0f9ff; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center;">
+        <p style="margin: 0 0 10px 0; color: #0284c7; font-size: 14px; font-weight: 600;">Your OTP Code</p>
+        <p style="margin: 0; font-size: 36px; font-weight: bold; color: #0ea5e9; letter-spacing: 8px; font-family: monospace;">
+          ${otp}
+        </p>
+        <p style="margin: 10px 0 0 0; color: #64748b; font-size: 12px;">Valid for 10 minutes</p>
+      </div>
+
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #991b1b; font-size: 14px;">
+          <strong>Security Notice:</strong> If you did not request this password reset, please ignore this email or contact us immediately at ${BASE_EMAIL}
+        </p>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px;">
+        Enter this OTP on the password reset page to create a new password for your account.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Password Reset OTP - PAI",
+      html: emailContent,
+    });
+
+    console.log(`Password reset OTP sent to ${userEmail}`);
+  } catch (error) {
+    console.error("Error sending password reset OTP email:", error);
+    throw error; // Throw error for password reset as it's critical
   }
 }

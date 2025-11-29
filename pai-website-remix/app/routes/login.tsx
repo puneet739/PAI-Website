@@ -4,11 +4,15 @@ import { verifyLogin } from "~/lib/auth.server";
 import { createUserSession, getUserId } from "~/lib/session.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  const { getUserId } = await import("~/lib/session.server");
   const userId = await getUserId(request);
-  if (userId) {
-    return redirect("/dashboard");
-  }
-  return null;
+  if (userId) return redirect("/dashboard");
+  
+  // Check for password reset success
+  const url = new URL(request.url);
+  const resetSuccess = url.searchParams.get("reset") === "success";
+  
+  return { resetSuccess };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -46,8 +50,9 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function Login() {
+export default function Login({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
+  const { resetSuccess } = loaderData || {};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -62,6 +67,20 @@ export default function Login() {
         </div>
 
         <Form method="post" className="mt-8 space-y-6">
+          {resetSuccess && (
+            <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Password reset successfully! You can now login with your new password.
+              </p>
+            </div>
+          )}
+
+          {actionData?.error && (
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">{actionData.error}</p>
+            </div>
+          )}
+
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -93,11 +112,6 @@ export default function Login() {
             </div>
           </div>
 
-          {actionData?.error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-              <p className="text-sm text-red-800 dark:text-red-200">{actionData.error}</p>
-            </div>
-          )}
 
           <div>
             <button
@@ -109,6 +123,9 @@ export default function Login() {
           </div>
 
           <div className="text-center space-y-2">
+            <a href="/forgot-password" className="block text-sm text-sky-600 dark:text-sky-400 hover:underline font-medium">
+              Forgot password?
+            </a>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
               <a href="/register" className="text-sky-600 dark:text-sky-400 hover:underline font-medium">
