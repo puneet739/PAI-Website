@@ -87,21 +87,21 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       <DashboardSidebar currentPath="/dashboard" userRole={member.membership_type} />
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 lg:ml-0">
         {/* Header */}
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
-            <a href="/" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              ← Back to Home
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white ml-12 lg:ml-0">Dashboard</h1>
+            <a href="/" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              ← Home
             </a>
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-4 sm:p-6 lg:p-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome back, {member.name}!
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
@@ -241,7 +241,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         )}
 
         {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mb-8">
           {/* Member Since */}
           <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">

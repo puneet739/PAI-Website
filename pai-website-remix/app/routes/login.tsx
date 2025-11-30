@@ -41,7 +41,14 @@ export async function action({ request }: Route.ActionArgs) {
     };
   }
 
-  return createUserSession(member.id, "/dashboard");
+  // Create session with JWT including role information
+  return createUserSession(
+    member.id,
+    member.email,
+    member.role_name || "USER",
+    member.role_id,
+    "/dashboard"
+  );
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -142,9 +149,10 @@ export default function Login({ loaderData }: Route.ComponentProps) {
         <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">Demo Accounts:</p>
           <div className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
-            <p><strong>Admin:</strong> admin@pai.org.in</p>
-            <p><strong>Pilot:</strong> pilot@example.com</p>
-            <p><strong>Beginner:</strong> beginner@example.com</p>
+            <p><strong>Admin:</strong> admin@pai.org.in (ADMIN role)</p>
+            <p><strong>Instructor:</strong> instructor@example.com (INSTRUCTOR role)</p>
+            <p><strong>Pilot:</strong> pilot@example.com (USER role)</p>
+            <p><strong>Beginner:</strong> beginner@example.com (USER role)</p>
             <p className="mt-2"><strong>Password:</strong> password123</p>
           </div>
         </div>

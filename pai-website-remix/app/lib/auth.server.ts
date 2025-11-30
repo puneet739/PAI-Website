@@ -7,6 +7,8 @@ export interface Member {
   name: string;
   phone: string | null;
   profile_image: string | null;
+  role_id: number;
+  role_name?: string;
   membership_type: "basic" | "premium" | "instructor";
   membership_status: "active" | "inactive" | "pending";
   active_until: string | null;
@@ -24,7 +26,10 @@ interface MemberWithPassword extends Member {
 // Verify login credentials
 export async function verifyLogin(email: string, password: string): Promise<Member | null> {
   const member = await queryOne<MemberWithPassword>(
-    "SELECT * FROM members WHERE email = ?",
+    `SELECT m.*, r.name as role_name 
+     FROM members m 
+     LEFT JOIN roles r ON m.role_id = r.id 
+     WHERE m.email = ?`,
     [email]
   );
 
@@ -45,7 +50,12 @@ export async function verifyLogin(email: string, password: string): Promise<Memb
 // Get member by ID
 export async function getMemberById(id: number): Promise<Member | null> {
   return queryOne<Member>(
-    "SELECT id, email, name, phone, profile_image, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE id = ?",
+    `SELECT m.id, m.email, m.name, m.phone, m.profile_image, m.role_id, r.name as role_name,
+     m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
+     FROM members m 
+     LEFT JOIN roles r ON m.role_id = r.id 
+     WHERE m.id = ?`,
     [id]
   );
 }
@@ -53,7 +63,12 @@ export async function getMemberById(id: number): Promise<Member | null> {
 // Get member by email
 export async function getMemberByEmail(email: string): Promise<Member | null> {
   return queryOne<Member>(
-    "SELECT id, email, name, phone, profile_image, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours, created_at, updated_at FROM members WHERE email = ?",
+    `SELECT m.id, m.email, m.name, m.phone, m.profile_image, m.role_id, r.name as role_name,
+     m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
+     FROM members m 
+     LEFT JOIN roles r ON m.role_id = r.id 
+     WHERE m.email = ?`,
     [email]
   );
 }

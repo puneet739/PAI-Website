@@ -3,20 +3,16 @@ import { Form, redirect, useActionData, useSearchParams } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { requireUserId } = await import("~/lib/session.server");
+  const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { getMemberById } = await import("~/lib/auth.server");
   const { query } = await import("~/lib/db.server");
   
-  const userId = await requireUserId(request);
+  // Require ADMIN or INSTRUCTOR role
+  const { userId } = await requireAdminOrInstructor(request);
   const member = await getMemberById(userId);
 
   if (!member) {
     throw redirect("/login");
-  }
-
-  // Only allow instructors/admins
-  if (member.membership_type !== 'instructor') {
-    throw redirect("/dashboard");
   }
 
   // Get search query from URL
@@ -72,16 +68,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { requireUserId } = await import("~/lib/session.server");
-  const { getMemberById } = await import("~/lib/auth.server");
+  const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { query } = await import("~/lib/db.server");
   
-  const userId = await requireUserId(request);
-  const member = await getMemberById(userId);
-
-  if (!member || member.membership_type !== 'instructor') {
-    throw redirect("/dashboard");
-  }
+  // Require ADMIN or INSTRUCTOR role
+  await requireAdminOrInstructor(request);
 
   const formData = await request.formData();
   const action = formData.get("_action");
@@ -190,21 +181,21 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar currentPath="/manage-users" userRole={member.membership_type} />
 
-      <div className="flex-1">
+      <div className="flex-1 lg:ml-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Manage Users</h1>
-            <a href="/admin" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              ← Back to Admin
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white ml-12 lg:ml-0">Manage Users</h1>
+            <a href="/admin" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              ← Admin
             </a>
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Search Section */}
             <div className="mb-8">
-              <Form method="get" className="flex gap-4">
+              <Form method="get" className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex-1">
                   <input
                     type="text"
@@ -216,7 +207,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                 </div>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition"
+                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition whitespace-nowrap"
                 >
                   Search
                 </button>
@@ -420,7 +411,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                       </div>
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                       <a
                         href={`/manage-users?q=${searchQuery}`}
                         className="flex-1 px-6 py-3 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition text-center"

@@ -20,20 +20,16 @@ interface MemberRequest {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { requireUserId } = await import("~/lib/session.server");
+  const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { getMemberById } = await import("~/lib/auth.server");
   const { query } = await import("~/lib/db.server");
   
-  const userId = await requireUserId(request);
+  // Require ADMIN or INSTRUCTOR role
+  const { userId } = await requireAdminOrInstructor(request);
   const member = await getMemberById(userId);
 
   if (!member) {
     throw redirect("/login");
-  }
-
-  // Check if user is admin/instructor
-  if (member.membership_type !== 'instructor') {
-    throw redirect("/dashboard");
   }
 
   // Get all pending requests with member details
@@ -67,21 +63,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const { requireUserId } = await import("~/lib/session.server");
-  const { getMemberById } = await import("~/lib/auth.server");
+  const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { query } = await import("~/lib/db.server");
   
-  const userId = await requireUserId(request);
-  const member = await getMemberById(userId);
-
-  if (!member) {
-    throw redirect("/login");
-  }
-
-  // Check if user is admin/instructor
-  if (member.membership_type !== 'instructor') {
-    throw redirect("/dashboard");
-  }
+  // Require ADMIN or INSTRUCTOR role
+  const { userId } = await requireAdminOrInstructor(request);
 
   const formData = await request.formData();
   const requestId = formData.get("requestId");
@@ -248,20 +234,20 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar currentPath="/admin" />
 
-      <div className="flex-1">
+      <div className="flex-1 lg:ml-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Admin Panel</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Manage member requests</p>
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div className="ml-12 lg:ml-0">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Admin Panel</h1>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage member requests</p>
             </div>
-            <a href="/dashboard" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              ← Back to Dashboard
+            <a href="/dashboard" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+              ← Dashboard
             </a>
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-4 sm:p-6 lg:p-8">
           {/* Success Message */}
           {actionData?.success && (
             <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
@@ -270,7 +256,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
           )}
 
           {/* Stats */}
-          <div className="grid gap-6 md:grid-cols-3 mb-8">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-3 mb-8">
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
@@ -314,8 +300,8 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
 
           {/* Pending Requests Table */}
           <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Pending Requests</h2>
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Pending Requests</h2>
             </div>
             <div className="overflow-x-auto">
               {pendingRequests.length > 0 ? (
