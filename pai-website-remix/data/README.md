@@ -8,19 +8,32 @@ The `members_import_template.csv` file contains sample data showing the required
 
 ### CSV Columns
 
-| Column Name | Description | Example |
-|------------|-------------|---------|
-| `name` | Full name of the member | Rajesh Kumar |
-| `email` | Email address (must be unique) | rajesh.kumar@example.com |
-| `phone` | Phone number with country code | +91-9876543220 |
-| `membership_number` | Unique membership identifier | PAI-2024-001 |
-| `active_until` | Membership expiry date (YYYY-MM-DD) | 2025-12-31 |
-| `member_since` | Date when member joined (YYYY-MM-DD) | 2024-01-15 |
-| `current_rating` | Pilot rating (P1, P2, P3, P4, or Instructor) | P3 |
-| `membership_type` | Type of membership (basic, premium, instructor) | premium |
-| `membership_status` | Current status (active, inactive, pending) | active |
-| `total_flights` | Total number of flights completed | 45 |
-| `total_flight_hours` | Total flight hours (decimal) | 67.50 |
+#### Member Information
+| Column Name | Description | Example | Required |
+|------------|-------------|---------|----------|
+| `name` | Full name of the member | Rajesh Kumar | Yes |
+| `email` | Email address (unique identifier) | rajesh.kumar@example.com | Yes |
+| `phone` | Phone number with country code | +91-9876543220 | No |
+| `active_until` | Membership expiry date (YYYY-MM-DD) | 2025-12-31 | No |
+| `member_since` | Date when member joined (YYYY-MM-DD) | 2024-01-15 | No |
+| `current_rating` | Pilot rating (P1, P2, P3, P4, or Instructor) | P3 | No |
+| `membership_type` | Type of membership (basic, premium, instructor) | premium | No |
+| `membership_status` | Current status (active, inactive, pending) | active | No |
+| `total_flights` | Total number of flights completed | 45 | No |
+| `total_flight_hours` | Total flight hours (decimal) | 67.50 | No |
+
+#### Insurance Policy Information (Optional)
+| Column Name | Description | Example | Required |
+|------------|-------------|---------|----------|
+| `insurance_policy_number` | Unique insurance policy identifier | PAI-INS-2024-001 | No |
+| `insurance_policy_type` | Type of policy (basic, premium, comprehensive) | premium | No |
+| `insurance_coverage_amount` | Coverage amount in rupees | 5000000.00 | No |
+| `insurance_premium_amount` | Premium amount in rupees | 5000.00 | No |
+| `insurance_start_date` | Policy start date (YYYY-MM-DD) | 2024-01-15 | No |
+| `insurance_end_date` | Policy end date (YYYY-MM-DD) | 2025-01-15 | No |
+| `insurance_status` | Policy status (active, expired, cancelled) | active | No |
+
+**Note:** If `insurance_policy_number` is provided, an insurance policy will be automatically created for the member. Leave all insurance fields empty if the member doesn't have insurance.
 
 ## How to Import Members
 
@@ -93,24 +106,18 @@ The `members_import_template.csv` file contains sample data showing the required
 The import script populates the `members` table with the following fields:
 
 - `id` (auto-generated)
-- `email` (from CSV)
-- `password_hash` (default: ChangeMe@123, hashed with bcrypt)
+- `email` (from CSV - unique identifier for members)
+- `password_hash` (random password, hashed with bcrypt)
 - `name` (from CSV)
-- `phone` (from CSV)
-- `membership_type` (from CSV: basic, premium, instructor)
-- `membership_status` (from CSV: active, inactive, pending)
-- `active_until` (from CSV)
-- `pilot_rating` (from CSV: P1, P2, P3, P4, Instructor)
-- `total_flights` (from CSV)
-- `total_flight_hours` (from CSV)
 - `created_at` (set to member_since from CSV)
 - `updated_at` (auto-generated)
 
 ## Notes
 
-- The membership_number column in the CSV is for reference only and not stored in the database
-- All imported users will need to reset their password on first login
+- Email is used as the unique identifier for members (no separate membership number)
+- All imported users get random passwords and must use "Forgot Password" to set their own
 - Phone numbers are optional and can be left empty
+- Insurance policy fields are optional - leave empty if member doesn't have insurance
 - Invalid dates will be handled gracefully
 - The script uses environment variables from `.env` for database connection
 

@@ -1,11 +1,11 @@
-name,email,phone,membership_number,active_until,member_since,current_rating,membership_type,membership_status,total_flights,total_flight_hours
-Rajesh Kumar,rajesh.kumar@example.com,+91-9876543220,PAI-2024-001,2025-12-31,2024-01-15,P3,premium,active,45,67.50
-Priya Sharma,priya.sharma@example.com,+91-9876543221,PAI-2024-002,2025-06-30,2023-06-20,P2,basic,active,28,42.25
-Amit Patel,amit.patel@example.com,+91-9876543222,PAI-2024-003,2025-11-15,2022-03-10,P4,premium,active,120,185.75
-Sneha Reddy,sneha.reddy@example.com,+91-9876543223,PAI-2024-004,2025-09-20,2024-02-28,P1,basic,active,12,18.00
-Vikram Singh,vikram.singh@example.com,+91-9876543224,PAI-2024-005,2024-12-31,2021-05-15,Instructor,instructor,active,310,520.50
-Anita Desai,anita.desai@example.com,+91-9876543225,PAI-2024-006,2025-08-10,2023-11-05,P2,basic,active,22,35.75
-Karthik Iyer,karthik.iyer@example.com,+91-9876543226,PAI-2024-007,2024-11-30,2024-03-12,P1,basic,inactive,8,12.50
-Meera Nair,meera.nair@example.com,+91-9876543227,PAI-2024-008,2025-10-25,2023-08-18,P3,premium,active,65,98.25
-Rohit Verma,rohit.verma@example.com,+91-9876543228,PAI-2024-009,2025-07-15,2024-01-20,P2,basic,active,18,28.00
-Divya Menon,divya.menon@example.com,+91-9876543229,PAI-2024-010,2025-12-20,2022-09-30,P4,premium,active,95,142.50
+name,email,phone,active_until,member_since,current_rating,membership_type,membership_status,total_flights,total_flight_hours,insurance_policy_number,insurance_policy_type,insurance_coverage_amount,insurance_premium_amount,insurance_start_date,insurance_end_date,insurance_status
+Rajesh Kumar,rajesh.kumar@example.com,+91-9876543220,2025-12-31,2024-01-15,P3,premium,active,45,67.50,PAI-INS-2024-001,premium,5000000.00,5000.00,2024-01-15,2025-01-15,active
+Priya Sharma,priya.sharma@example.com,+91-9876543221,2025-06-30,2023-06-20,P2,basic,active,28,42.25,PAI-INS-2024-002,basic,2000000.00,2000.00,2023-06-20,2024-06-20,expired
+Amit Patel,amit.patel@example.com,+91-9876543222,2025-11-15,2022-03-10,P4,premium,active,120,185.75,PAI-INS-2024-003,comprehensive,10000000.00,8000.00,2024-03-10,2025-03-10,active
+Sneha Reddy,sneha.reddy@example.com,+91-9876543223,2025-09-20,2024-02-28,P1,basic,active,12,18.00,,,,,,,
+Vikram Singh,vikram.singh@example.com,+91-9876543224,2024-12-31,2021-05-15,Instructor,instructor,active,310,520.50,PAI-INS-2024-005,comprehensive,15000000.00,10000.00,2024-05-15,2025-05-15,active
+Anita Desai,anita.desai@example.com,+91-9876543225,2025-08-10,2023-11-05,P2,basic,active,22,35.75,PAI-INS-2024-006,basic,2000000.00,2000.00,2023-11-05,2024-11-05,active
+Karthik Iyer,karthik.iyer@example.com,+91-9876543226,2024-11-30,2024-03-12,P1,basic,inactive,8,12.50,,,,,,,
+Meera Nair,meera.nair@example.com,+91-9876543227,2025-10-25,2023-08-18,P3,premium,active,65,98.25,PAI-INS-2024-008,premium,5000000.00,5000.00,2023-08-18,2024-08-18,active
+Rohit Verma,rohit.verma@example.com,+91-9876543228,2025-07-15,2024-01-20,P2,basic,active,18,28.00,,,,,,,
+Divya Menon,divya.menon@example.com,+91-9876543229,2025-12-20,2022-09-30,P4,premium,active,95,142.50,PAI-INS-2024-010,premium,5000000.00,5000.00,2022-09-30,2023-09-30,expired

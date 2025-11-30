@@ -18,7 +18,6 @@ interface MemberData {
   name: string;
   email: string;
   phone: string;
-  membership_number: string;
   active_until: string;
   member_since: string;
   current_rating: string;
@@ -26,6 +25,13 @@ interface MemberData {
   membership_status: string;
   total_flights: string;
   total_flight_hours: string;
+  insurance_policy_number: string;
+  insurance_policy_type: string;
+  insurance_coverage_amount: string;
+  insurance_premium_amount: string;
+  insurance_start_date: string;
+  insurance_end_date: string;
+  insurance_status: string;
 }
 
 // Generate a random secure password
@@ -128,7 +134,7 @@ async function importMembers(csvFilePath: string) {
         const memberSince = member.member_since ? new Date(member.member_since) : new Date();
 
         // Insert member
-        await connection.execute(
+        const [result]: any = await connection.execute(
           `INSERT INTO members (
             email, 
             password_hash, 
@@ -157,7 +163,44 @@ async function importMembers(csvFilePath: string) {
           ]
         );
 
-        console.log(`✅ Imported: ${member.name} (${member.email})`);
+        const memberId = result.insertId;
+
+        // Create insurance policy if policy number is provided
+        if (member.insurance_policy_number && member.insurance_policy_number.trim()) {
+          try {
+            const insuranceStartDate = member.insurance_start_date ? new Date(member.insurance_start_date) : new Date();
+            const insuranceEndDate = member.insurance_end_date ? new Date(member.insurance_end_date) : null;
+
+            await connection.execute(
+              `INSERT INTO insurance_policies (
+                member_id,
+                policy_number,
+                policy_type,
+                coverage_amount,
+                premium_amount,
+                start_date,
+                end_date,
+                status
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                memberId,
+                member.insurance_policy_number,
+                member.insurance_policy_type || 'basic',
+                parseFloat(member.insurance_coverage_amount) || 0.00,
+                parseFloat(member.insurance_premium_amount) || 0.00,
+                insuranceStartDate,
+                insuranceEndDate,
+                member.insurance_status || 'active'
+              ]
+            );
+            console.log(`✅ Imported: ${member.name} (${member.email}) with insurance policy ${member.insurance_policy_number}`);
+          } catch (policyError: any) {
+            console.log(`✅ Imported: ${member.name} (${member.email}) but failed to create insurance policy: ${policyError.message}`);
+          }
+        } else {
+          console.log(`✅ Imported: ${member.name} (${member.email})`);
+        }
+        
         successCount++;
       } catch (error: any) {
         console.error(`❌ Error importing ${member.name} (${member.email}):`, error.message);

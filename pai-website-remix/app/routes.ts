@@ -20,5 +20,6 @@ export default [
   route("upload-profile-image", "routes/upload-profile-image.tsx"),
   route("download-insurance-card/:policyId", "routes/download-insurance-card.$policyId.tsx"),
   route("admin", "routes/admin.tsx"),
+  route("manage-users", "routes/manage-users.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;
