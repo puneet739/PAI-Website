@@ -53,7 +53,7 @@ export async function action({ request }: Route.ActionArgs) {
   const hashedPassword = await hash(newPassword, 10);
 
   // Update password
-  await query("UPDATE members SET password = ? WHERE id = ?", [hashedPassword, userId]);
+  await query("UPDATE members SET password_hash = ? WHERE id = ?", [hashedPassword, userId]);
 
   return { success: "Password updated successfully!" };
 }

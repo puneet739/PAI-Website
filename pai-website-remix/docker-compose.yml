@@ -10,6 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=mysql://pai_user:pai_password@mysql:3306/pai_db
+      #- DATABASE_URL=mysql://root:UOxdfOFBgEGIsGjykOYuJLwoQbCqWwnN@crossover.proxy.rlwy.net:35058/railway
     depends_on:
       mysql:
         condition: service_healthy

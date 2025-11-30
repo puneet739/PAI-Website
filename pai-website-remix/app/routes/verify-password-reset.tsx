@@ -48,7 +48,7 @@ export async function action({ request }: Route.ActionArgs) {
   const hashedPassword = await hash(newPassword, 10);
 
   // Update password
-  await query("UPDATE members SET password = ? WHERE email = ?", [hashedPassword, email]);
+  await query("UPDATE members SET password_hash = ? WHERE email = ?", [hashedPassword, email]);
 
   // Delete used OTP
   await query("DELETE FROM otp_verifications WHERE email = ? AND purpose = 'password_reset'", [email]);
