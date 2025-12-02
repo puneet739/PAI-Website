@@ -3,6 +3,21 @@
 
 -- Create tables for PAI website
 
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name ENUM('ADMIN', 'USER', 'INSTRUCTOR') UNIQUE NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert default roles
+INSERT INTO roles (name, description) VALUES
+('ADMIN', 'Administrator with full access to admin panel and user management'),
+('USER', 'Regular user with access to member features'),
+('INSTRUCTOR', 'Instructor with access to admin panel and user management');
+
 -- Users/Members table
 CREATE TABLE IF NOT EXISTS members (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -11,6 +26,7 @@ CREATE TABLE IF NOT EXISTS members (
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     profile_image LONGTEXT,
+    role_id INT DEFAULT 2,
     membership_type ENUM('basic', 'premium', 'instructor') DEFAULT 'basic',
     membership_status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
     active_until DATE NULL,
@@ -19,8 +35,10 @@ CREATE TABLE IF NOT EXISTS members (
     total_flight_hours DECIMAL(10,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id),
     INDEX idx_email (email),
-    INDEX idx_membership_status (membership_status)
+    INDEX idx_membership_status (membership_status),
+    INDEX idx_role_id (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Flying sites table
@@ -189,11 +207,13 @@ INSERT INTO flying_sites (name, location, state, description, difficulty_level, 
 -- Create demo users (password: 'password123' - bcrypt hashed)
 -- Hash generated with: bcrypt.hash('password123', 10)
 -- active_until dates set to 1 year from now
-INSERT INTO members (email, password_hash, name, phone, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours) VALUES
-('admin@pai.org.in', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'PAI Admin', '+91-9876543210', 'instructor', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'Instructor', 250, 450.50),
-('pilot@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'John Pilot', '+91-9876543211', 'premium', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'P4', 85, 120.75),
-('beginner@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Sarah Beginner', '+91-9876543212', 'basic', 'active', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'P2', 15, 22.50),
-('puneet739@gmail.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Puneet', NULL, 'basic', 'inactive', NULL, 'P1', 0, 0.00);
+-- role_id: 1=ADMIN, 2=USER, 3=INSTRUCTOR
+INSERT INTO members (email, password_hash, name, phone, role_id, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours) VALUES
+('admin@pai.org.in', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'PAI Admin', '+91-9876543210', 1, 'instructor', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'Instructor', 250, 450.50),
+('pilot@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'John Pilot', '+91-9876543211', 2, 'premium', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'P4', 85, 120.75),
+('beginner@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Sarah Beginner', '+91-9876543212', 2, 'basic', 'active', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'P2', 15, 22.50),
+('puneet739@gmail.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Puneet', NULL, 2, 'basic', 'inactive', NULL, 'P1', 0, 0.00),
+('instructor@example.com', '$2b$10$M7tjfHnU39uMsb9Bfwmwi.PT4JGhQbebg8cp7gCpBdZxikhVdpZgW', 'Jane Instructor', '+91-9876543213', 3, 'instructor', 'active', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'Instructor', 180, 320.25);
 
 -- Insert sample insurance policies
 INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES
