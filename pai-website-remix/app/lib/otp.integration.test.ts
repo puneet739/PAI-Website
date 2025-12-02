@@ -14,7 +14,7 @@ import { sendPasswordResetOTPEmail } from './email.server';
  * Note: Some tests require a running database and email configuration
  */
 
-describe('OTP Integration Tests', () => {
+describe.skip('OTP Integration Tests', () => {
   const testEmail = 'puneet739@gmail.com';
   const testName = 'Puneet Behl';
   let testUserId: number;

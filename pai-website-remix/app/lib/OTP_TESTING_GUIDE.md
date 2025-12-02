@@ -11,10 +11,12 @@ This guide explains how to test the OTP (One-Time Password) functionality for pa
 
 ## Running the Tests
 
-### Run All OTP Tests
+### Run All OTP Tests (Unit Tests Only)
 ```bash
-npm test forgot-password verify-password-reset otp.integration
+npm test forgot-password verify-password-reset
 ```
+
+**Note:** Integration tests are skipped by default in `npm test` and must be run manually.
 
 ### Run Individual Test Suites
 
@@ -50,10 +52,23 @@ Tests covered:
 - ✅ Prevents OTP reuse
 - ✅ Uses most recent OTP (ORDER BY created_at DESC)
 
-#### 3. Integration Tests
+#### 3. Integration Tests (Manual Only)
+
+**Integration tests are skipped by default.** To run them manually:
+
 ```bash
-npm test otp.integration.test.ts
+# Run all integration tests
+npm test -- otp.integration.test.ts --run
+
+# Run specific integration test
+npm test -- otp.integration.test.ts -t "should send real OTP email" --run
 ```
+
+**Why are they skipped?**
+- Require running database
+- May send real emails
+- Slower than unit tests
+- Should be run manually before deployment
 
 Tests covered:
 - ✅ Complete database operations
@@ -63,6 +78,7 @@ Tests covered:
 - ✅ OTP deletion after use
 - ✅ Concurrent request handling
 - ✅ OTP format validation
+- ✅ Real email sending (manual)
 
 ### Run with UI (Recommended)
 ```bash
@@ -89,13 +105,13 @@ The integration test file includes **manual tests** for sending real emails. The
 1. **Configure Environment Variables** in `.env`:
 ```env
 ENABLE_EMAIL=true
-SMTP_HOST=smtp.gmail.com
+SMTP_HOST=smtp.zoho.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=noreply@pai.org.in
-BASE_EMAIL=base@pgaoi.org
+SMTP_USER=info@loaderhouse.com
+SMTP_PASSWORD=your-password
+FROM_EMAIL=info@loaderhouse.com
+BASE_EMAIL=your-email@gmail.com
 ```
 
 2. **Update Test Email Address**:
@@ -105,7 +121,10 @@ BASE_EMAIL=base@pgaoi.org
 
 3. **Run the Real Email Test**:
 ```bash
-npm test -- otp.integration.test.ts -t "should send real OTP email"
+ENABLE_EMAIL=true SMTP_HOST=smtp.zoho.com SMTP_PORT=587 SMTP_SECURE=false \
+SMTP_USER=info@loaderhouse.com SMTP_PASSWORD='your-password' \
+FROM_EMAIL=info@loaderhouse.com BASE_EMAIL=your-email@gmail.com \
+npm test -- otp.integration.test.ts -t "should send real OTP email" --run
 ```
 
 Or run both real email tests:

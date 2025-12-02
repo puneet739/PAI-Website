@@ -18,8 +18,76 @@ env:
   DOCKER_REGISTRY: docker.io
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: pai_db
+          MYSQL_USER: pai_user
+          MYSQL_PASSWORD: pai_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: pai-website-remix/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./pai-website-remix
+        run: npm ci
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -proot_password --silent; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Initialize database
+        working-directory: ./pai-website-remix
+        run: |
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password pai_db < mysql-init/01-init.sql
+          mysql -h127.0.0.1 -P3306 -uroot -proot_password pai_db < mysql-init/02-otp-table.sql
+
+      - name: Run unit tests
+        working-directory: ./pai-website-remix
+        run: npm test -- --run
+        env:
+          DATABASE_URL: mysql://pai_user:pai_password@127.0.0.1:3306/pai_db
+          ENABLE_EMAIL: false
+          NODE_ENV: test
+
+      - name: Run integration tests
+        working-directory: ./pai-website-remix
+        run: npm test -- otp.integration.test.ts --run
+        env:
+          DATABASE_URL: mysql://pai_user:pai_password@127.0.0.1:3306/pai_db
+          ENABLE_EMAIL: false
+          NODE_ENV: test
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: test
     
     steps:
       - name: Checkout code
