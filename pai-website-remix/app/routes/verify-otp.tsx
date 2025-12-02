@@ -58,8 +58,17 @@ export async function action({ request }: Route.ActionArgs) {
     // Clear registration session
     session.unset("registrationEmail");
     
+    // Get role name (default to 'member' for new registrations)
+    const roleName = member.role_name || 'member';
+    
     // Create user session and redirect to dashboard
-    return createUserSession(member.id, "/dashboard");
+    return createUserSession(
+      member.id,
+      member.email,
+      roleName,
+      member.role_id,
+      "/dashboard"
+    );
   } catch (error) {
     return {
       error: "Failed to create account. Please try again.",
