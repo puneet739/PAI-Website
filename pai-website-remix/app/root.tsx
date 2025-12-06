@@ -52,8 +52,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let showDetails = false;
   let errorDetails: string | undefined;
 
+  // Log error to console for debugging
+  console.error("ErrorBoundary caught error:", error);
+
   if (isRouteErrorResponse(error)) {
     statusCode = error.status;
+    console.error(`Route error response: ${error.status} - ${error.statusText}`);
     
     switch (error.status) {
       case 404:
