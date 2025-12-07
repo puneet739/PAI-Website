@@ -2,6 +2,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/home.tsx"),
+  route("verify-pilot", "routes/verify-pilot.tsx"),
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
   route("verify-otp", "routes/verify-otp.tsx"),
@@ -23,6 +24,7 @@ export default [
   route("admin", "routes/admin.tsx"),
   route("manage-users", "routes/manage-users.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("api/search-pilot", "routes/api.search-pilot.tsx"),
   // Catch-all route for 404s and DevTools requests (must be last)
   route("*", "routes/$.tsx"),
 ] satisfies RouteConfig;
