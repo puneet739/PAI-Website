@@ -1,6 +1,6 @@
 import type { Route } from "./+types/dashboard";
 import { redirect } from "react-router";
-import { requireUserId } from "~/lib/session.server";
+import { requireUserId, updateSessionActivity } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
@@ -15,12 +15,19 @@ interface UpcomingEvent {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+  console.log("[dashboard] Loader called");
+  
   const userId = await requireUserId(request);
+  console.log(`[dashboard] User ID: ${userId}`);
+  
   const member = await getMemberById(userId);
 
   if (!member) {
+    console.log("[dashboard] Member not found, redirecting to login");
     throw redirect("/login");
   }
+
+  console.log(`[dashboard] Member loaded: ${member.name}`);
 
   // Get upcoming events
   const upcomingEvents = await query<UpcomingEvent>(
@@ -35,6 +42,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const imageUpdated = url.searchParams.get("image") === "updated";
   const renewalRequested = url.searchParams.get("renewal") === "requested";
   const profileUpdated = url.searchParams.get("profile") === "updated";
+
+  // Update session activity (sliding session) - this updates the cookie
+  await updateSessionActivity(request);
+  console.log("[dashboard] Session activity updated");
 
   return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated };
 }

@@ -2,9 +2,19 @@ import type { Route } from "./+types/login";
 import { Form, redirect, useActionData } from "react-router";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  console.log("[login] Loader called");
+  
   const { getUserId } = await import("~/lib/session.server");
   const userId = await getUserId(request);
-  if (userId) return redirect("/dashboard");
+  
+  console.log(`[login] getUserId returned: ${userId}`);
+  
+  if (userId) {
+    console.log("[login] User already logged in, redirecting to dashboard");
+    return redirect("/dashboard");
+  }
+  
+  console.log("[login] No valid user session, showing login page");
   
   // Check for password reset success
   const url = new URL(request.url);

@@ -1,13 +1,16 @@
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-change-in-production";
-const JWT_EXPIRES_IN = "7d"; // Token expires in 7 days
+const JWT_EXPIRES_IN = "24h"; // Token expires in 24 hours
 
 export interface JWTPayload {
   userId: number;
   email: string;
   role: string;
   roleId: number;
+  iat?: number;
+  exp?: number;
+  lastActivity?: number;
 }
 
 /**
@@ -38,19 +41,25 @@ export function extractToken(request: Request): string | null {
   // Check Authorization header first
   const authHeader = request.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
+    console.log("[extractToken] Found token in Authorization header");
     return authHeader.substring(7);
   }
 
-  // Check cookie as fallback
+  // Check cookie as fallback - NOTE: This won't work with encrypted session cookies
+  // We need to get the token from the session storage instead
   const cookieHeader = request.headers.get("Cookie");
+  console.log(`[extractToken] Cookie header: ${cookieHeader?.substring(0, 100)}...`);
+  
   if (cookieHeader) {
     const cookies = cookieHeader.split(";").map((c) => c.trim());
     const tokenCookie = cookies.find((c) => c.startsWith("jwt_token="));
     if (tokenCookie) {
+      console.log("[extractToken] Found jwt_token in plain cookie");
       return tokenCookie.substring(10);
     }
   }
 
+  console.log("[extractToken] No token found in headers or cookies");
   return null;
 }
 
