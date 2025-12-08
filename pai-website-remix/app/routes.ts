@@ -2,12 +2,15 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/home.tsx"),
+  route("verify-pilot", "routes/verify-pilot.tsx"),
   route("login", "routes/login.tsx"),
   route("register", "routes/register.tsx"),
   route("verify-otp", "routes/verify-otp.tsx"),
   route("forgot-password", "routes/forgot-password.tsx"),
   route("verify-password-reset", "routes/verify-password-reset.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
+  route("edit-profile", "routes/edit-profile.tsx"),
+  route("generate-card", "routes/generate-card.tsx"),
   route("my-requests", "routes/my-requests.tsx"),
   route("insurance", "routes/insurance.tsx"),
   route("tests", "routes/tests.tsx"),
@@ -22,4 +25,7 @@ export default [
   route("admin", "routes/admin.tsx"),
   route("manage-users", "routes/manage-users.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("api/search-pilot", "routes/api.search-pilot.tsx"),
+  // Catch-all route for 404s and DevTools requests (must be last)
+  route("*", "routes/$.tsx"),
 ] satisfies RouteConfig;

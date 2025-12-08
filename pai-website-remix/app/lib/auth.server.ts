@@ -3,9 +3,14 @@ import { query, queryOne } from "./db.server";
 
 export interface Member {
   id: number;
+  membership_id: string | null;
   email: string;
   name: string;
   phone: string | null;
+  address: string | null;
+  blood_group: string | null;
+  gender: "Male" | "Female" | "Other" | null;
+  date_of_birth: string | null;
   profile_image: string | null;
   role_id: number;
   role_name?: string;
@@ -26,7 +31,10 @@ interface MemberWithPassword extends Member {
 // Verify login credentials
 export async function verifyLogin(email: string, password: string): Promise<Member | null> {
   const member = await queryOne<MemberWithPassword>(
-    `SELECT m.*, r.name as role_name 
+    `SELECT m.id, m.membership_id, m.email, m.password_hash, m.name, m.phone, m.address, 
+     m.blood_group, m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
+     m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
      FROM members m 
      LEFT JOIN roles r ON m.role_id = r.id 
      WHERE m.email = ?`,
@@ -50,7 +58,8 @@ export async function verifyLogin(email: string, password: string): Promise<Memb
 // Get member by ID
 export async function getMemberById(id: number): Promise<Member | null> {
   return queryOne<Member>(
-    `SELECT m.id, m.email, m.name, m.phone, m.profile_image, m.role_id, r.name as role_name,
+    `SELECT m.id, m.membership_id, m.email, m.name, m.phone, m.address, m.blood_group, 
+     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
      m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
      m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
      FROM members m 
@@ -63,7 +72,8 @@ export async function getMemberById(id: number): Promise<Member | null> {
 // Get member by email
 export async function getMemberByEmail(email: string): Promise<Member | null> {
   return queryOne<Member>(
-    `SELECT m.id, m.email, m.name, m.phone, m.profile_image, m.role_id, r.name as role_name,
+    `SELECT m.id, m.membership_id, m.email, m.name, m.phone, m.address, m.blood_group, 
+     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
      m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
      m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
      FROM members m 

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PAI Membership Card</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #e6f2ff;
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+  }
+  .card {
+    width: 820px;
+    height: 420px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+  }
+  .bg-shape {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('pai_paragliding_background.png') no-repeat right center;
+    opacity: 0.15;
+  }
+  .left-section {
+    width: 55%;
+    z-index: 2;
+  }
+  .profile-pic {
+    width: 110px;
+    height: 110px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .name {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  .membership-id {
+    margin-top: 20px;
+  }
+  .membership-id span {
+    font-size: 14px;
+    color: #444;
+  }
+  .membership-id .id-value {
+    display: block;
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 4px;
+  }
+
+  .details {
+    margin-top: 25px;
+    font-size: 16px;
+    line-height: 25px;
+  }
+
+  .right-section {
+    width: 45%;
+    text-align: center;
+    z-index: 2;
+  }
+  .qr {
+    width: 180px;
+    height: 180px;
+    margin: 20px auto 10px auto;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="bg-shape"></div>
+
+  <div class="left-section">
+    <img src="https://picsum.photos/200" alt="Profile" class="profile-pic" />
+    <div class="name">Aarav Sharma</div>
+
+    <div class="membership-id">
+      <span>PAI Membership ID</span>
+      <span class="id-value">PAI-MEM-45892</span>
+    </div>
+
+    <div class="details">
+      <strong>Membership Details</strong><br>
+      Member Since: Jan 2020 <br>
+      Valid Until: Dec 2025 <br>
+      Insurance Amount: ₹5,00,000 <br>
+      Insurance Number: PAI-INS-99874 <br>
+      Rating: Advanced Pilot (AP-3)
+    </div>
+  </div>
+
+  <div class="right-section">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PAI-MEM-45892" alt="QR Code" class="qr" />
+    <div>Scan for Verification</div>
+
+    <div class="details" style="margin-top: 20px; text-align: left; padding-left: 80px;">
+      Blood Group: O+ <br>
+      Gender: Male <br>
+      Date of Birth: 15/08/1985 <br>
+      Address: 123, Cloudview Heights, Bir Billing,<br>
+      Himachal Pradesh, 176077
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

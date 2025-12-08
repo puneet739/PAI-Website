@@ -1,6 +1,6 @@
 import type { Route } from "./+types/dashboard";
 import { redirect } from "react-router";
-import { requireUserId } from "~/lib/session.server";
+import { requireUserId, updateSessionActivity } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
@@ -15,12 +15,19 @@ interface UpcomingEvent {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+  console.log("[dashboard] Loader called");
+  
   const userId = await requireUserId(request);
+  console.log(`[dashboard] User ID: ${userId}`);
+  
   const member = await getMemberById(userId);
 
   if (!member) {
+    console.log("[dashboard] Member not found, redirecting to login");
     throw redirect("/login");
   }
+
+  console.log(`[dashboard] Member loaded: ${member.name}`);
 
   // Get upcoming events
   const upcomingEvents = await query<UpcomingEvent>(
@@ -34,8 +41,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   const ratingRequested = url.searchParams.get("rating") === "requested";
   const imageUpdated = url.searchParams.get("image") === "updated";
   const renewalRequested = url.searchParams.get("renewal") === "requested";
+  const profileUpdated = url.searchParams.get("profile") === "updated";
 
-  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested };
+  // Update session activity (sliding session) - this updates the cookie
+  await updateSessionActivity(request);
+  console.log("[dashboard] Session activity updated");
+
+  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -46,7 +58,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested } = loaderData;
+  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
@@ -210,6 +222,26 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
+        {profileUpdated && (
+          <div className="mb-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
+                  Profile Updated Successfully!
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  Your profile information has been updated successfully.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
           <div className="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -306,7 +338,18 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           {/* Member Info */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Member Information</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Member Information</h3>
+                <a
+                  href="/edit-profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/30 transition text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Profile
+                </a>
+              </div>
               
               {/* Profile Image Section */}
               <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
@@ -363,6 +406,24 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</span>
                   <span className="text-sm text-gray-900 dark:text-white">{member.phone || "Not provided"}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</span>
+                  <span className="text-sm text-gray-900 dark:text-white text-right max-w-xs">{member.address || "Not provided"}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Blood Group</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{member.blood_group || "Not provided"}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Gender</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{member.gender || "Not provided"}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Date of Birth</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not provided"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Membership Type</span>
