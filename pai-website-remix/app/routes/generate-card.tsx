@@ -109,7 +109,9 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
   };
 
   // Generate QR code data (URL to verify member)
-  const qrCodeData = `https://pai.org.in/verify/${member.membership_id || member.id}`;
+  const membershipId = member.membership_id || `PAI-MEM-${String(member.id).padStart(5, '0')}`;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pai.org.in';
+  const qrCodeData = `${baseUrl}/verify-pilot?membershipid=${membershipId}`;
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
