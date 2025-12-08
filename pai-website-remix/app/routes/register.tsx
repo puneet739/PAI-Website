@@ -34,12 +34,36 @@ export async function action({ request }: Route.ActionArgs) {
     };
   }
 
+  // Generate and store OTP
+  const { generateOTP, storeOTP } = await import("~/lib/otp.server");
+  const { sendEmailVerificationOTP } = await import("~/lib/email.server");
+  
+  const otp = generateOTP();
+  
+  try {
+    // Store OTP in database with 10 minute expiry
+    await storeOTP(email, otp, "email_verification", 10);
+  } catch (error) {
+    console.error("Error storing OTP:", error);
+    return {
+      error: "Failed to process registration. Please try again or contact support.",
+    };
+  }
+  
+  // Send OTP via email asynchronously (non-blocking)
+  // This allows the user to proceed immediately without waiting for email delivery
+  sendEmailVerificationOTP({
+    userEmail: email,
+    otp,
+  }).catch((error) => {
+    console.error("Error sending verification email (async):", error);
+    // Email failure is logged but doesn't block the user
+    // User can still proceed to verification page and request resend if needed
+  });
+  
   // Store email in session and redirect to OTP verification
   const session = await getSession(request.headers.get("Cookie"));
   session.set("registrationEmail", email);
-  
-  // In production, you would send OTP to email here
-  // For demo, we'll accept any 6-digit code
   
   return redirect("/verify-otp", {
     headers: {

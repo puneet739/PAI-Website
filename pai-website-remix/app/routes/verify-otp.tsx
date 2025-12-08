@@ -48,12 +48,19 @@ export async function action({ request }: Route.ActionArgs) {
     };
   }
 
-  // Demo: Accept any 6-digit OTP
-  // In production, you would verify against the sent OTP
+  // Verify OTP against database
+  const { verifyOTP } = await import("~/lib/otp.server");
+  const isValidOTP = await verifyOTP(email, otp, "email_verification");
+  
+  if (!isValidOTP) {
+    return {
+      error: "Invalid or expired OTP. Please check the code or request a new one.",
+    };
+  }
 
   try {
-    // Create new member with inactive status
-    const member = await createMember(email, otp, name); // Using OTP as temporary password
+    // Create new member with a temporary password (they can set it later or use OTP login)
+    const member = await createMember(email, otp, name);
     
     // Clear registration session
     session.unset("registrationEmail");
@@ -142,9 +149,8 @@ export default function VerifyOTP({ loaderData }: Route.ComponentProps) {
           )}
 
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">Demo Mode:</p>
-            <p className="text-xs text-blue-800 dark:text-blue-300">
-              Enter any 6-digit code (e.g., 123456) to complete registration
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              Please check your email for the 6-digit verification code. The code is valid for 10 minutes.
             </p>
           </div>
 

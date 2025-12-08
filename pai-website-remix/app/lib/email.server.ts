@@ -62,6 +62,11 @@ interface PasswordResetOTPEmail {
   otp: string;
 }
 
+interface EmailVerificationOTPEmail {
+  userEmail: string;
+  otp: string;
+}
+
 interface MembershipRenewalEmail {
   userName: string;
   userEmail: string;
@@ -349,6 +354,63 @@ export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEm
     console.log(`Rating upgrade request emails sent for request #${requestId}`);
   } catch (error) {
     console.error("Error sending rating upgrade request emails:", error);
+  }
+}
+
+// Send email verification OTP
+export async function sendEmailVerificationOTP(data: EmailVerificationOTPEmail) {
+  // Check if email is enabled
+  if (!isEmailEnabled()) {
+    console.log("Email disabled. Skipping email verification OTP.");
+    throw new Error("Email service is currently disabled. Please contact administrator.");
+  }
+
+  const { userEmail, otp } = data;
+
+  const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Welcome to PAI!</h2>
+      <p>Thank you for registering with the Paragliding Association of India.</p>
+      <p>To complete your registration, please verify your email address using the OTP below:</p>
+      
+      <div style="background-color: #f0f9ff; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center;">
+        <p style="margin: 0 0 10px 0; color: #0284c7; font-size: 14px; font-weight: 600;">Your Verification Code</p>
+        <p style="margin: 0; font-size: 36px; font-weight: bold; color: #0ea5e9; letter-spacing: 8px; font-family: monospace;">
+          ${otp}
+        </p>
+        <p style="margin: 10px 0 0 0; color: #64748b; font-size: 12px;">Valid for 10 minutes</p>
+      </div>
+
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #991b1b; font-size: 14px;">
+          <strong>Security Notice:</strong> If you did not create an account with PAI, please ignore this email or contact us at ${BASE_EMAIL}
+        </p>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px;">
+        Enter this OTP on the verification page to complete your registration and create your PAI member account.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated email from Paragliding Association of India (PAI).<br>
+        Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Verify Your Email - PAI Registration",
+      html: emailContent,
+    });
+
+    console.log(`Email verification OTP sent to ${userEmail}`);
+  } catch (error) {
+    console.error("Error sending email verification OTP:", error);
+    throw error; // Throw error as it's critical for registration
   }
 }
 

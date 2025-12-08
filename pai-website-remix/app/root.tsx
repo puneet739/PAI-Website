@@ -12,6 +12,13 @@ import "./app.css";
 
 export const links: Route.LinksFunction = () => [];
 
+export async function loader() {
+  // Log configuration at startup (server-side only)
+  //const { logConfig } = await import("./lib/config.server");
+  //logConfig();
+  return null;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
