@@ -7,7 +7,7 @@ on:
       - master
       - develop
     tags:
-      - 'v*'
+      - 'Release/V*'
   pull_request:
     branches:
       - main
