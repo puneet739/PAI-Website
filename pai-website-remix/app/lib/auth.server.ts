@@ -83,6 +83,15 @@ export async function getMemberByEmail(email: string): Promise<Member | null> {
   );
 }
 
+/**
+ * Generate membership ID in format PAI-MEM-XXXXX
+ * where XXXXX is a 5-digit zero-padded member ID
+ */
+function generateMembershipId(memberId: number): string {
+  const paddedId = memberId.toString().padStart(5, '0');
+  return `PAI-MEM-${paddedId}`;
+}
+
 // Create a new member
 export async function createMember(
   email: string,
@@ -96,6 +105,18 @@ export async function createMember(
   const result = await query(
     "INSERT INTO members (email, password_hash, name, phone, membership_status) VALUES (?, ?, ?, ?, 'inactive')",
     [email, passwordHash, name, phone || null]
+  ) as any;
+
+  // Get the newly created member ID
+  const memberId = result.insertId;
+  
+  // Generate membership ID based on the member ID
+  const membershipId = generateMembershipId(memberId);
+  
+  // Update the member with the generated membership ID
+  await query(
+    "UPDATE members SET membership_id = ? WHERE id = ?",
+    [membershipId, memberId]
   );
 
   const member = await getMemberByEmail(email);
