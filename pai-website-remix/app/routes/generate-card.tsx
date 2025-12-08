@@ -150,7 +150,7 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
                   <div 
                     className="absolute top-0 left-0 w-full h-full opacity-15 pointer-events-none"
                     style={{
-                      backgroundImage: 'url(/CardTemplate/pai_paragliding_background.png)',
+                      backgroundImage: 'url(/pai_paragliding_background.png)',
                       backgroundRepeat: 'no-repeat',
                       backgroundPosition: 'right center',
                       backgroundSize: 'contain'
