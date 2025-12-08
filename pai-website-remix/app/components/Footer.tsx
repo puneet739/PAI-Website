@@ -1,0 +1,19 @@
+export function Footer() {
+  return (
+    <footer className="bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 py-4 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Developed and contributed by{" "}
+          <span className="font-medium text-gray-900 dark:text-white">Puneet Behl</span>
+          {" • "}
+          <a 
+            href="mailto:puneet739@gmail.com" 
+            className="text-sky-600 dark:text-sky-400 hover:underline"
+          >
+            puneet739@gmail.com
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}
