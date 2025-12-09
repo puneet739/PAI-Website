@@ -4,6 +4,10 @@ import * as readline from 'readline';
 import * as crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
 
 // Database configuration from environment variables
 const dbConfig = {
@@ -133,6 +137,19 @@ async function importMembers(csvFilePath: string) {
         const activeUntil = member.active_until ? new Date(member.active_until) : null;
         const memberSince = member.member_since ? new Date(member.member_since) : new Date();
 
+        // Assign role_id: All imported members get USER role (role_id = 2)
+        // role_id: 1=ADMIN, 2=USER, 3=INSTRUCTOR
+        const roleId = 2; // USER role for all imported members
+        const membershipType = member.membership_type?.toLowerCase() || 'basic';
+        const pilotRating = member.current_rating?.toUpperCase() || 'P1';
+
+        // Normalize phone number format
+        let phone = member.phone || null;
+        if (phone && !phone.startsWith('+')) {
+          // Add +91- prefix if missing
+          phone = `+91-${phone.replace(/^91/, '')}`;
+        }
+
         // Insert member
         const [result]: any = await connection.execute(
           `INSERT INTO members (
@@ -140,6 +157,7 @@ async function importMembers(csvFilePath: string) {
             password_hash, 
             name, 
             phone, 
+            role_id,
             membership_type, 
             membership_status, 
             active_until, 
@@ -147,16 +165,17 @@ async function importMembers(csvFilePath: string) {
             total_flights, 
             total_flight_hours,
             created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             member.email,
             passwordHash,
             member.name,
-            member.phone || null,
-            member.membership_type || 'basic',
+            phone,
+            roleId,
+            membershipType,
             member.membership_status || 'pending',
             activeUntil,
-            member.current_rating || 'P1',
+            pilotRating,
             parseInt(member.total_flights) || 0,
             parseFloat(member.total_flight_hours) || 0.00,
             memberSince
