@@ -2,6 +2,29 @@
 
 Official website for the Paragliding Association of India, built with React Router and Tailwind CSS.
 
+## Project Owner & Creator
+
+**Created and maintained by [Puneet Behl](https://github.com/puneet739)**
+
+This is an open-source community project for the Paragliding Association of India. See [CONTRIBUTORS.md](../CONTRIBUTORS.md) for the full list of contributors.
+
+## License & Usage
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](../LICENSE) file for details.
+
+### Commercial Use Notice
+
+This project is open source for educational and non-commercial purposes. **For commercial use, explicit permission must be obtained from the project owner, Puneet Behl.**
+
+### Attribution Requirement
+
+When using or modifying this project, you must:
+- Maintain visible attribution to **Puneet Behl** as the original project creator
+- Keep the contributor acknowledgment visible on all pages
+- Include a link to the original repository
+
+For questions about licensing or commercial use, please contact: puneet739@gmail.com
+
 ## Features
 
 - 🚀 Server-side rendering
