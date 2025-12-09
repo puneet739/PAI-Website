@@ -1,5 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { query } from './db.server';
+
+// Mock Resend to prevent initialization errors in tests
+vi.mock('resend', () => ({
+  Resend: vi.fn(() => ({
+    emails: {
+      send: vi.fn().mockResolvedValue({ id: 'test-resend-id' }),
+    },
+  })),
+}));
+
 import { sendPasswordResetOTPEmail } from './email.server';
 
 /**

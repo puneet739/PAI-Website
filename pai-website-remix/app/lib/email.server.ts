@@ -1,7 +1,9 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 // Global email configuration toggle
 const EMAIL_ENABLED = process.env.ENABLE_EMAIL === "true";
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || "SMTP"; // SMTP or RESEND
 
 // Email configuration from environment variables
 const emailConfig = {
@@ -18,12 +20,44 @@ const emailConfig = {
 const BASE_EMAIL = process.env.BASE_EMAIL || "base@pgaoi.org";
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pai.org.in";
 
-// Create reusable transporter
+// Create reusable transporter for SMTP
 const transporter = nodemailer.createTransport(emailConfig);
+
+// Create Resend client (only if API key is available or provider is RESEND)
+const resend = new Resend(process.env.RESEND_API_KEY || "re_test_key_for_development");
 
 // Helper function to check if email is enabled
 function isEmailEnabled(): boolean {
   return EMAIL_ENABLED;
+}
+
+// Helper function to send email using the configured provider
+async function sendEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string | string[];
+  subject: string;
+  html: string;
+}): Promise<void> {
+  if (EMAIL_PROVIDER === "RESEND") {
+    // Use Resend
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    });
+  } else {
+    // Use SMTP (default)
+    await transporter.sendMail({
+      from: FROM_EMAIL,
+      to,
+      subject,
+      html,
+    });
+  }
 }
 
 interface MembershipRequestEmail {
@@ -147,22 +181,20 @@ export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
 
   try {
     // Send email to user
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "PAI Membership Application Received",
       html: userEmailContent,
     });
 
     // Send email to base
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: BASE_EMAIL,
       subject: `New Membership Application - ${userName} (#${requestId})`,
       html: adminEmailContent,
     });
 
-    console.log(`Membership request emails sent for request #${requestId}`);
+    console.log(`Membership request emails sent for request #${requestId} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending membership request emails:", error);
     // Don't throw error - we don't want to block the request if email fails
@@ -243,22 +275,20 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
 
   try {
     // Send email to user
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "PAI Insurance Request Received",
       html: userEmailContent,
     });
 
     // Send email to base
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: BASE_EMAIL,
       subject: `New Insurance Request - ${userName} - ${insurancePlan} (#${requestId})`,
       html: adminEmailContent,
     });
 
-    console.log(`Insurance request emails sent for request #${requestId}`);
+    console.log(`Insurance request emails sent for request #${requestId} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending insurance request emails:", error);
   }
@@ -336,22 +366,20 @@ export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEm
 
   try {
     // Send email to user
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "PAI Rating Upgrade Request Received",
       html: userEmailContent,
     });
 
     // Send email to base
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: BASE_EMAIL,
       subject: `New Rating Upgrade Request - ${userName} (${currentRating} → ${requestedRating}) (#${requestId})`,
       html: adminEmailContent,
     });
 
-    console.log(`Rating upgrade request emails sent for request #${requestId}`);
+    console.log(`Rating upgrade request emails sent for request #${requestId} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending rating upgrade request emails:", error);
   }
@@ -400,14 +428,13 @@ export async function sendEmailVerificationOTP(data: EmailVerificationOTPEmail) 
   `;
 
   try {
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "Verify Your Email - PAI Registration",
       html: emailContent,
     });
 
-    console.log(`Email verification OTP sent to ${userEmail}`);
+    console.log(`Email verification OTP sent to ${userEmail} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending email verification OTP:", error);
     throw error; // Throw error as it's critical for registration
@@ -457,14 +484,13 @@ export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
   `;
 
   try {
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "Password Reset OTP - PAI",
       html: emailContent,
     });
 
-    console.log(`Password reset OTP sent to ${userEmail}`);
+    console.log(`Password reset OTP sent to ${userEmail} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending password reset OTP email:", error);
     throw error; // Throw error for password reset as it's critical
@@ -543,22 +569,20 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
 
   try {
     // Send email to user
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: userEmail,
       subject: "PAI Membership Renewal Request Received",
       html: userEmailContent,
     });
 
     // Send email to base
-    await transporter.sendMail({
-      from: FROM_EMAIL,
+    await sendEmail({
       to: BASE_EMAIL,
       subject: `Membership Renewal Request - ${userName} (#${requestId})`,
       html: adminEmailContent,
     });
 
-    console.log(`Membership renewal emails sent for request #${requestId}`);
+    console.log(`Membership renewal emails sent for request #${requestId} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending membership renewal emails:", error);
   }

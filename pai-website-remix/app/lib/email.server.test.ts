@@ -9,6 +9,15 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
+// Mock Resend
+vi.mock('resend', () => ({
+  Resend: vi.fn(() => ({
+    emails: {
+      send: vi.fn().mockResolvedValue({ id: 'test-resend-id' }),
+    },
+  })),
+}));
+
 describe('Email Server', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -60,9 +69,9 @@ describe('Email Server', () => {
         userName: 'Test User',
         userEmail: 'test@example.com',
         phone: '+919876543210',
-        insurancePlan: 'premium',
-        coverage: 5000000,
-        premium: 5000,
+        insurancePlan: 'Premium',
+        coverage: '₹50 Lakh',
+        premium: '₹5,000',
         comments: 'Test comments',
         requestId: 1,
       };
