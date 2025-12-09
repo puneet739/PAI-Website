@@ -29,12 +29,17 @@ export async function action({ request }: Route.ActionArgs) {
     [email, otp, expiresAt, otp, expiresAt]
   );
 
-  // Send OTP via email
+  // Send OTP via email asynchronously (non-blocking)
+  // This allows the user to proceed immediately without waiting for email delivery
   const { sendPasswordResetOTPEmail } = await import("~/lib/email.server");
-  await sendPasswordResetOTPEmail({
+  sendPasswordResetOTPEmail({
     userName: user.name,
     userEmail: email,
     otp,
+  }).catch((error) => {
+    console.error("Error sending password reset OTP email (async):", error);
+    // Email failure is logged but doesn't block the user
+    // User can still proceed to verification page and request resend if needed
   });
 
   // Redirect to OTP verification page with email

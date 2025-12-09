@@ -72,9 +72,10 @@ export async function action({ request }: Route.ActionArgs) {
   // Get the inserted request ID
   const requestId = (result as any).insertId;
 
-  // Send email notifications
+  // Send email notifications asynchronously (non-blocking)
+  // This allows the user to proceed immediately without waiting for email delivery
   const { sendMembershipRenewalEmail } = await import("~/lib/email.server");
-  await sendMembershipRenewalEmail({
+  sendMembershipRenewalEmail({
     userName: name,
     userEmail: email,
     phone,
@@ -82,6 +83,9 @@ export async function action({ request }: Route.ActionArgs) {
     currentRating: member.pilot_rating,
     expiryDate: member.active_until || '',
     requestId,
+  }).catch((error) => {
+    console.error("Error sending membership renewal email (async):", error);
+    // Email failure is logged but doesn't block the user
   });
 
   return redirect("/dashboard?renewal=requested");

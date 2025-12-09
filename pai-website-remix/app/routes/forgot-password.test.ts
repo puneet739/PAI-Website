@@ -309,4 +309,112 @@ describe('Forgot Password - OTP Generation', () => {
       expect(otps.size).toBeGreaterThanOrEqual(8);
     });
   });
+
+  describe('Async Email Sending - Non-Blocking Behavior', () => {
+    it('should not await email sending and return immediately', async () => {
+      mockQuery.mockResolvedValueOnce([
+        { id: 1, name: 'Test User', email: 'test@example.com' }
+      ]);
+      mockQuery.mockResolvedValueOnce({});
+      
+      // Mock email to take a long time (simulating slow SMTP)
+      let emailResolved = false;
+      mockSendPasswordResetOTPEmail.mockImplementation(() => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            emailResolved = true;
+            resolve(undefined);
+          }, 5000); // 5 second delay
+        });
+      });
+
+      const { action } = await import('./forgot-password');
+      
+      const formData = new URLSearchParams();
+      formData.append('email', 'test@example.com');
+
+      const request = new Request('http://localhost/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      const startTime = Date.now();
+      const result = await action({ request, params: {}, context: {} } as any);
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Action should complete in less than 1 second (not waiting for email)
+      expect(duration).toBeLessThan(1000);
+      
+      // Email should NOT be resolved yet
+      expect(emailResolved).toBe(false);
+      
+      // Should still redirect successfully
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(302);
+    });
+
+    it('should handle email failures gracefully without blocking user', async () => {
+      mockQuery.mockResolvedValueOnce([
+        { id: 1, name: 'Test User', email: 'test@example.com' }
+      ]);
+      mockQuery.mockResolvedValueOnce({});
+      
+      // Mock email to fail
+      mockSendPasswordResetOTPEmail.mockRejectedValueOnce(new Error('SMTP connection failed'));
+
+      const { action } = await import('./forgot-password');
+      
+      const formData = new URLSearchParams();
+      formData.append('email', 'test@example.com');
+
+      const request = new Request('http://localhost/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      // Should not throw error even if email fails
+      const result = await action({ request, params: {}, context: {} } as any);
+
+      // Should still redirect successfully
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(302);
+      expect((result as Response).headers.get('Location')).toBe('/verify-password-reset?email=test%40example.com');
+    });
+
+    it('should call email function but not await it', async () => {
+      mockQuery.mockResolvedValueOnce([
+        { id: 1, name: 'Test User', email: 'test@example.com' }
+      ]);
+      mockQuery.mockResolvedValueOnce({});
+      mockSendPasswordResetOTPEmail.mockResolvedValueOnce(undefined);
+
+      const { action } = await import('./forgot-password');
+      
+      const formData = new URLSearchParams();
+      formData.append('email', 'test@example.com');
+
+      const request = new Request('http://localhost/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      await action({ request, params: {}, context: {} } as any);
+
+      // Email function should be called
+      expect(mockSendPasswordResetOTPEmail).toHaveBeenCalledTimes(1);
+      
+      // But the action should complete before email promise resolves
+      // This is verified by the timing test above
+    });
+  });
 });

@@ -74,9 +74,10 @@ export async function action({ request }: Route.ActionArgs) {
   // Get the inserted request ID
   const requestId = (result as any).insertId;
 
-  // Send email notifications
+  // Send email notifications asynchronously (non-blocking)
+  // This allows the user to proceed immediately without waiting for email delivery
   const { sendRatingUpgradeRequestEmail } = await import("~/lib/email.server");
-  await sendRatingUpgradeRequestEmail({
+  sendRatingUpgradeRequestEmail({
     userName: name,
     userEmail: email,
     phone,
@@ -84,6 +85,9 @@ export async function action({ request }: Route.ActionArgs) {
     requestedRating,
     details,
     requestId,
+  }).catch((error) => {
+    console.error("Error sending rating upgrade request email (async):", error);
+    // Email failure is logged but doesn't block the user
   });
 
   return redirect("/dashboard?rating=requested");

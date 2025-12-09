@@ -69,15 +69,19 @@ export async function action({ request }: Route.ActionArgs) {
   // Get the inserted request ID
   const requestId = (result as any).insertId;
 
-  // Send email notifications
+  // Send email notifications asynchronously (non-blocking)
+  // This allows the user to proceed immediately without waiting for email delivery
   const { sendMembershipRequestEmail } = await import("~/lib/email.server");
-  await sendMembershipRequestEmail({
+  sendMembershipRequestEmail({
     userName: name,
     userEmail: email,
     phone,
     details,
     currentRating: member.pilot_rating,
     requestId,
+  }).catch((error) => {
+    console.error("Error sending membership request email (async):", error);
+    // Email failure is logged but doesn't block the user
   });
 
   return redirect("/dashboard?application=success");
