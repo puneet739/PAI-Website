@@ -36,6 +36,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect("/login");
   }
 
+  // Get pagination parameters from URL
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const limit = 10; // Items per page
+  const offset = (page - 1) * limit;
+
   // Get all pending requests with member details
   const pendingRequests = await query<MemberRequest>(
     `SELECT 
@@ -49,7 +55,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     ORDER BY mr.created_at DESC`
   );
 
-  // Get recent processed requests with processor information
+  // Get total count of processed requests
+  const totalCountResult = await query<{ total: number }>(
+    `SELECT COUNT(*) as total
+    FROM member_requests
+    WHERE status IN ('approved', 'rejected')`
+  );
+  const totalRequests = totalCountResult[0]?.total || 0;
+  const totalPages = Math.ceil(totalRequests / limit);
+
+  // Get recent processed requests with processor information (paginated)
   const recentRequests = await query<MemberRequest>(
     `SELECT 
       mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone, 
@@ -63,10 +78,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     LEFT JOIN members processor ON mr.processed_by = processor.id
     WHERE mr.status IN ('approved', 'rejected')
     ORDER BY mr.updated_at DESC
-    LIMIT 20`
+    LIMIT ${limit} OFFSET ${offset}`
   );
 
-  return { member, pendingRequests, recentRequests };
+  return { member, pendingRequests, recentRequests, pagination: { page, totalPages, totalRequests, limit } };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -181,7 +196,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Admin({ loaderData }: Route.ComponentProps) {
-  const { member, pendingRequests, recentRequests } = loaderData;
+  const { member, pendingRequests, recentRequests, pagination } = loaderData;
   const actionData = useActionData<typeof action>();
 
   const formatDate = (dateString: string) => {
@@ -473,6 +488,33 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing page {pagination.page} of {pagination.totalPages} ({pagination.totalRequests} total requests)
+                  </div>
+                  <div className="flex gap-2">
+                    {pagination.page > 1 && (
+                      <a
+                        href={`/admin?page=${pagination.page - 1}`}
+                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+                      >
+                        ← Previous
+                      </a>
+                    )}
+                    {pagination.page < pagination.totalPages && (
+                      <a
+                        href={`/admin?page=${pagination.page + 1}`}
+                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+                      >
+                        Next →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </main>
