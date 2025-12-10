@@ -111,7 +111,7 @@ export default function VerifyPilot() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Enter pilot name or membership ID..."
-              className="flex-1 px-6 py-4 rounded-xl border-2 border-gray-200 focus:border-sky-500 focus:outline-none text-lg"
+              className="flex-1 px-6 py-4 rounded-xl border-2 border-gray-200 focus:border-sky-500 focus:outline-none text-lg text-gray-900 placeholder-gray-500"
             />
             <button
               type="submit"
