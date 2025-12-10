@@ -1,6 +1,7 @@
 import type { Route } from "./+types/upgrade-rating";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { useState } from "react";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { requireUserId } = await import("~/lib/session.server");
@@ -29,15 +30,18 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const requestedRating = formData.get("requestedRating");
+  const requestedRatings = formData.getAll("requestedRating");
   const name = formData.get("name");
   const email = formData.get("email");
   const phone = formData.get("phone");
   const details = formData.get("details");
 
-  if (typeof requestedRating !== "string" || !requestedRating) {
-    return { error: "Please select a rating" };
+  if (!requestedRatings || requestedRatings.length === 0) {
+    return { error: "Please select at least one rating" };
   }
+
+  // Convert array to comma-separated string
+  const requestedRating = requestedRatings.join(",");
 
   if (typeof name !== "string" || !name) {
     return { error: "Name is required" };
@@ -103,6 +107,7 @@ export function meta({}: Route.MetaArgs) {
 export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
   const { member } = loaderData;
   const actionData = useActionData<typeof action>();
+  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
 
   const ratings = [
     { value: 'P1', label: 'P1 - Beginner Pilot', description: 'Basic paragliding knowledge' },
@@ -111,6 +116,14 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
     { value: 'P4', label: 'P4 - Advanced Pilot', description: 'Expert level XC flying' },
     { value: 'P5', label: 'P5 - Master Pilot', description: 'Professional competition level' },
   ];
+
+  const toggleRating = (value: string) => {
+    setSelectedRatings(prev => 
+      prev.includes(value) 
+        ? prev.filter(r => r !== value)
+        : [...prev, value]
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -145,22 +158,48 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
 
               <Form method="post" className="space-y-6">
                 <div>
-                  <label htmlFor="requestedRating" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Requested Rating <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Requested Ratings <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="requestedRating"
-                    name="requestedRating"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="">Select a rating</option>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Select one or more ratings you wish to upgrade to
+                  </p>
+                  <div className="space-y-2">
                     {ratings.map((rating) => (
-                      <option key={rating.value} value={rating.value}>
-                        {rating.label} - {rating.description}
-                      </option>
+                      <label
+                        key={rating.value}
+                        className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all ${
+                          selectedRatings.includes(rating.value)
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
+                            : 'border-gray-300 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          name="requestedRating"
+                          value={rating.value}
+                          checked={selectedRatings.includes(rating.value)}
+                          onChange={() => toggleRating(rating.value)}
+                          className="mt-1 h-4 w-4 text-sky-500 border-gray-300 rounded focus:ring-sky-500"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {rating.label}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {rating.description}
+                          </div>
+                        </div>
+                      </label>
                     ))}
-                  </select>
+                  </div>
+                  {selectedRatings.length > 0 && (
+                    <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        Selected: <span className="font-semibold">{selectedRatings.join(", ")}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

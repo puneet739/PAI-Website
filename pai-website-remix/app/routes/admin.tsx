@@ -17,6 +17,10 @@ interface MemberRequest {
   status: string;
   created_at: string;
   member_name: string;
+  admin_notes?: string;
+  processed_by?: number;
+  processed_at?: string;
+  processor_name?: string;
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -45,15 +49,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     ORDER BY mr.created_at DESC`
   );
 
-  // Get recent processed requests
+  // Get recent processed requests with processor information
   const recentRequests = await query<MemberRequest>(
     `SELECT 
       mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone, 
       mr.details, mr.current_rating, mr.requested_rating, mr.insurance_type,
-      mr.coverage_amount, mr.status, mr.created_at,
-      m.name as member_name
+      mr.coverage_amount, mr.status, mr.created_at, mr.admin_notes, 
+      mr.processed_by, mr.processed_at,
+      m.name as member_name,
+      processor.name as processor_name
     FROM member_requests mr
     JOIN members m ON mr.member_id = m.id
+    LEFT JOIN members processor ON mr.processed_by = processor.id
     WHERE mr.status IN ('approved', 'rejected')
     ORDER BY mr.updated_at DESC
     LIMIT 20`
@@ -411,7 +418,9 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Processed By</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                     </tr>
                   </thead>
@@ -426,13 +435,35 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                             {getRequestTypeLabel(request.request_type)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {request.name}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{request.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{request.email}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{request.phone}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
+                            {request.details}
+                          </div>
+                          {request.requested_rating && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {request.current_rating} → {request.requested_rating}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(request.status)}`}>
                             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {request.processor_name || 'N/A'}
+                          </div>
+                          {request.processed_at && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatDate(request.processed_at)}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(request.created_at)}
