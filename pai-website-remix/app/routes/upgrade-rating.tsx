@@ -36,12 +36,15 @@ export async function action({ request }: Route.ActionArgs) {
   const phone = formData.get("phone");
   const details = formData.get("details");
 
-  if (!requestedRatings || requestedRatings.length === 0) {
-    return { error: "Please select at least one rating" };
+  // Filter out empty strings and check if we have valid ratings
+  const validRatings = requestedRatings.filter(r => r && String(r).trim() !== '');
+  
+  if (!validRatings || validRatings.length === 0) {
+    return { error: "Please select a rating" };
   }
 
   // Convert array to comma-separated string
-  const requestedRating = requestedRatings.join(",");
+  const requestedRating = validRatings.join(",");
 
   if (typeof name !== "string" || !name) {
     return { error: "Name is required" };
