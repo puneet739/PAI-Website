@@ -1,9 +1,10 @@
 import type { Route } from "./+types/dashboard";
 import { redirect } from "react-router";
+import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { getRatingLabel } from "~/lib/constants";
 import { requireUserId, updateSessionActivity } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
-import { DashboardSidebar } from "~/components/DashboardSidebar";
 
 interface UpcomingEvent {
   id: number;
@@ -305,7 +306,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 Upgrade
               </a>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{member.pilot_rating}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{getRatingLabel(member.pilot_rating)}</p>
           </div>
         </div>
 

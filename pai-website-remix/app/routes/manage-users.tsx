@@ -1,6 +1,7 @@
 import type { Route } from "./+types/manage-users";
-import { Form, redirect, useActionData, useSearchParams } from "react-router";
+import { Form, redirect, useActionData, useLoaderData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { getRatingLabel, PILOT_RATINGS } from "~/lib/constants";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
@@ -237,7 +238,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                           <div className="flex gap-4 mt-2">
                             <span className="text-xs px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200">
-                              {user.pilot_rating}
+                              {getRatingLabel(user.pilot_rating)}
                             </span>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                               user.membership_status === 'active' 
@@ -331,10 +332,11 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           required
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         >
-                          <option value="P1">P1</option>
-                          <option value="P2">P2</option>
-                          <option value="P3">P3</option>
-                          <option value="P4">P4</option>
+                          {PILOT_RATINGS.map((rating) => (
+                            <option key={rating.value} value={rating.value}>
+                              {rating.label}
+                            </option>
+                          ))}
                           <option value="Instructor">Instructor</option>
                         </select>
                       </div>

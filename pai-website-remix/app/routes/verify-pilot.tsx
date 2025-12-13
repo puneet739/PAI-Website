@@ -1,4 +1,7 @@
 import type { Route } from "./+types/verify-pilot";
+import { useLoaderData } from "react-router";
+import { query } from "~/lib/db.server";
+import { getRatingLabel } from "~/lib/constants";
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 
@@ -185,7 +188,7 @@ export default function VerifyPilot() {
                           {/* Rating */}
                           <div className="bg-sky-50 rounded-lg p-4">
                             <p className="text-sm font-semibold text-gray-700 mb-1">Current Rating</p>
-                            <p className="text-xl font-bold text-gray-900">{pilot.pilot_rating}</p>
+                            <p className="text-xl font-bold text-gray-900">{getRatingLabel(pilot.pilot_rating)}</p>
                           </div>
 
                           {/* Membership Status */}

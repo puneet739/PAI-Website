@@ -46,6 +46,13 @@ export async function verifyOTP(
   otp: string,
   purpose: "password_reset" | "email_verification" | "two_factor"
 ): Promise<boolean> {
+  // In demo mode, accept any 6-digit OTP
+  const IS_DEMO_SITE = process.env.IS_DEMO_SITE === "true";
+  if (IS_DEMO_SITE && /^\d{6}$/.test(otp)) {
+    console.log(`[Demo Mode] Accepting OTP for ${email}`);
+    return true;
+  }
+
   const record = await queryOne<OTPVerification>(
     `SELECT * FROM otp_verifications 
      WHERE email = ? AND purpose = ? AND otp = ?`,

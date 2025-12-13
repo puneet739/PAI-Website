@@ -2,6 +2,7 @@ import type { Route } from "./+types/upgrade-rating";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState } from "react";
+import { PILOT_RATINGS } from "~/lib/constants";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { requireUserId } = await import("~/lib/session.server");
@@ -112,14 +113,6 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
 
-  const ratings = [
-    { value: 'P1', label: 'P1 - Beginner Pilot', description: 'Basic paragliding knowledge' },
-    { value: 'P2', label: 'P2 - Novice Pilot', description: 'Intermediate flying techniques' },
-    { value: 'P3', label: 'P3 - Intermediate Pilot', description: 'Advanced maneuvers' },
-    { value: 'P4', label: 'P4 - Advanced Pilot', description: 'Expert level XC flying' },
-    { value: 'P5', label: 'P5 - Master Pilot', description: 'Professional competition level' },
-  ];
-
   const toggleRating = (value: string) => {
     setSelectedRatings(prev => 
       prev.includes(value) 
@@ -168,7 +161,7 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
                     Select one or more ratings you wish to upgrade to
                   </p>
                   <div className="space-y-2">
-                    {ratings.map((rating) => (
+                    {PILOT_RATINGS.map((rating) => (
                       <label
                         key={rating.value}
                         className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all ${

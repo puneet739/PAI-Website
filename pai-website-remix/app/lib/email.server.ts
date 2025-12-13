@@ -4,6 +4,7 @@ import { Resend } from "resend";
 // Global email configuration toggle
 const EMAIL_ENABLED = process.env.ENABLE_EMAIL === "true";
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || "SMTP"; // SMTP or RESEND
+const IS_DEMO_SITE = process.env.IS_DEMO_SITE === "true";
 
 // Email configuration from environment variables
 const emailConfig = {
@@ -28,6 +29,10 @@ const resend = new Resend(process.env.RESEND_API_KEY || "re_test_key_for_develop
 
 // Helper function to check if email is enabled
 function isEmailEnabled(): boolean {
+  // Disable emails on demo sites
+  if (IS_DEMO_SITE) {
+    return false;
+  }
   return EMAIL_ENABLED;
 }
 

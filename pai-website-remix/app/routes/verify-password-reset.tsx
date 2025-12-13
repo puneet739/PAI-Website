@@ -4,6 +4,8 @@ import { Form, redirect, useActionData, useSearchParams } from "react-router";
 export async function action({ request }: Route.ActionArgs) {
   const { query } = await import("~/lib/db.server");
   const { hash } = await import("bcryptjs");
+  const { verifyOTP } = await import("~/lib/otp.server");
+  
   const formData = await request.formData();
   const email = formData.get("email");
   const otp = formData.get("otp");
@@ -34,13 +36,10 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "Password must be at least 8 characters long" };
   }
 
-  // Verify OTP
-  const otpRecords = await query(
-    "SELECT * FROM otp_verifications WHERE email = ? AND otp = ? AND purpose = 'password_reset' AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
-    [email, otp]
-  );
+  // Verify OTP using centralized function (supports demo mode)
+  const isValidOTP = await verifyOTP(email, otp, "password_reset");
 
-  if (otpRecords.length === 0) {
+  if (!isValidOTP) {
     return { error: "Invalid or expired OTP" };
   }
 
@@ -49,9 +48,6 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Update password
   await query("UPDATE members SET password_hash = ? WHERE email = ?", [hashedPassword, email]);
-
-  // Delete used OTP
-  await query("DELETE FROM otp_verifications WHERE email = ? AND purpose = 'password_reset'", [email]);
 
   return redirect("/login?reset=success");
 }

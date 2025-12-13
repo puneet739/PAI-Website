@@ -5,6 +5,7 @@ import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useRef } from "react";
+import { getRatingLabel } from "~/lib/constants";
 
 interface InsurancePolicy {
   policy_number: string;
@@ -205,7 +206,7 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
                             Insurance Number: {insurancePolicy.policy_number}<br />
                           </>
                         )}
-                        Rating: {member.pilot_rating}
+                        Rating: {getRatingLabel(member.pilot_rating)}
                       </div>
                     </div>
 
