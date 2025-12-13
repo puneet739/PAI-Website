@@ -1,7 +1,7 @@
 import type { Route } from "./+types/upgrade-rating";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PILOT_RATINGS } from "~/lib/constants";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -113,12 +113,29 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
 
+  // Initialize selected ratings from member's current pilot_rating (handles CSV)
+  useEffect(() => {
+    if (member.pilot_rating) {
+      const currentRatings = member.pilot_rating.includes(',')
+        ? member.pilot_rating.split(',').map(r => r.trim())
+        : [member.pilot_rating];
+      setSelectedRatings(currentRatings);
+    }
+  }, [member.pilot_rating]);
+
   const toggleRating = (value: string) => {
-    setSelectedRatings(prev => 
-      prev.includes(value) 
-        ? prev.filter(r => r !== value)
-        : [...prev, value]
-    );
+    setSelectedRatings(prev => {
+      if (prev.includes(value)) {
+        // Allow unchecking
+        return prev.filter(r => r !== value);
+      } else {
+        // Only allow checking if less than 3 are selected
+        if (prev.length < 3) {
+          return [...prev, value];
+        }
+        return prev; // Don't add if already 3 selected
+      }
+    });
   };
 
   return (
@@ -158,16 +175,23 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
                     Requested Ratings <span className="text-red-500">*</span>
                   </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                    Select one or more ratings you wish to upgrade to
+                    Select up to 3 ratings you wish to upgrade to ({selectedRatings.length}/3 selected)
                   </p>
+                  {selectedRatings.length >= 3 && (
+                    <div className="mb-3 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded text-xs text-orange-800 dark:text-orange-200">
+                      Maximum 3 ratings selected. Uncheck a rating to select a different one.
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {PILOT_RATINGS.map((rating) => (
                       <label
                         key={rating.value}
-                        className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all ${
+                        className={`flex items-start p-4 border rounded-lg transition-all ${
                           selectedRatings.includes(rating.value)
-                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
-                            : 'border-gray-300 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-700'
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 cursor-pointer'
+                            : selectedRatings.length >= 3
+                            ? 'border-gray-300 dark:border-gray-700 opacity-50 cursor-not-allowed'
+                            : 'border-gray-300 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-700 cursor-pointer'
                         }`}
                       >
                         <input
