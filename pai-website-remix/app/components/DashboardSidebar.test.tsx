@@ -34,7 +34,7 @@ describe('DashboardSidebar', () => {
   });
 
   it('should render Admin Panel for instructor role', () => {
-    render(<DashboardSidebar currentPath="/dashboard" userRole="instructor" />);
+    render(<DashboardSidebar currentPath="/dashboard" userRole="INSTRUCTOR" />);
     expect(screen.getByText('Admin Panel')).toBeInTheDocument();
   });
 
