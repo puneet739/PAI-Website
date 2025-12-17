@@ -10,3 +10,6 @@
 /coverage/
 *.lcov
 .vitest/
+
+# CSV files in scripts folder
+/scripts/*.csv
