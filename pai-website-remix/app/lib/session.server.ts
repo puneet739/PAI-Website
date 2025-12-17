@@ -137,7 +137,7 @@ export async function createUserSession(
   roleId: number,
   redirectTo: string
 ) {
-  console.log(`[createUserSession] Creating session for user ${userId}, redirecting to ${redirectTo}`);
+  console.log(`[createUserSession] Creating session for user ${userId} ${role} ${roleId}, redirecting to ${redirectTo}`);
   
   // Generate JWT token
   const token = generateToken({ userId, email, role, roleId });

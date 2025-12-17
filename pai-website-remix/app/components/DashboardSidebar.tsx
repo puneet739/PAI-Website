@@ -24,8 +24,8 @@ export function DashboardSidebar({ currentPath, userRole }: DashboardSidebarProp
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const isAdmin = userRole === 'instructor' || userRole === 'admin';
+  console.log("Current User Role: " + userRole);
+  const isAdmin = userRole === 'INSTRUCTOR' || userRole === 'ADMIN';
 
   const navItems = [
     {

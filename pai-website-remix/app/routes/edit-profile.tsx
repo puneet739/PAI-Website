@@ -63,7 +63,7 @@ export default function EditProfile({ loaderData, actionData }: Route.ComponentP
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/edit-profile" userRole={member.membership_type} />
+      <DashboardSidebar currentPath="/edit-profile" userRole={member.role_name} />
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">

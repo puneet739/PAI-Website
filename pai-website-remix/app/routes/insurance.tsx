@@ -153,7 +153,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/insurance" userRole={member.membership_type} />
+      <DashboardSidebar currentPath="/insurance" userRole={member.role_name} />
 
       {/* Main Content */}
       <div className="flex-1">

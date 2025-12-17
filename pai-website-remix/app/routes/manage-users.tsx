@@ -180,7 +180,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar currentPath="/manage-users" userRole={member.membership_type} />
+      <DashboardSidebar currentPath="/manage-users" userRole={member.role_name} />
 
       <div className="flex-1 lg:ml-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
