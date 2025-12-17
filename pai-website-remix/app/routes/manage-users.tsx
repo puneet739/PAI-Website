@@ -176,7 +176,6 @@ export function meta({}: Route.MetaArgs) {
 export default function ManageUsers({ loaderData }: Route.ComponentProps) {
   const { member, searchResults, selectedUser, userInsurance, searchQuery } = loaderData;
   const actionData = useActionData<typeof action>();
-  const [searchParams] = useSearchParams();
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
