@@ -63,7 +63,7 @@ def calculate_end_date(start_date_str: str) -> str:
         start_date_str: Start date string
         
     Returns:
-        End date string (start_date + 365 days) or empty string
+        End date string (start_date + 365 days) in YYYY-MM-DD format or empty string
     """
     # Try multiple date formats
     date_formats = [
@@ -72,13 +72,16 @@ def calculate_end_date(start_date_str: str) -> str:
         '%d-%m-%Y',
         '%m/%d/%Y',
         '%d/%m/%Y',
-        '%Y/%m/%d'
+        '%Y/%m/%d',
+        '%d/%m/%Y %H:%M:%S',
+        '%d/%m/%Y %H:%M',
+        '%Y-%m-%d %H:%M:%S'
     ]
     
     start_date = parse_date(start_date_str, date_formats)
     if start_date:
         end_date = start_date + timedelta(days=365)
-        return format_date(end_date)
+        return format_date(end_date)  # Returns YYYY-MM-DD format
     return ''
 
 
@@ -159,6 +162,157 @@ def read_insurance_csv(filepath: str) -> Dict[str, Dict[str, str]]:
         sys.exit(1)
 
 
+def normalize_date(date_str: str) -> str:
+    """
+    Normalize date to YYYY-MM-DD format.
+    
+    Args:
+        date_str: Date string in various formats
+        
+    Returns:
+        Date string in YYYY-MM-DD format or empty string
+    """
+    date_formats = [
+        '%Y-%m-%d',
+        '%m-%d-%Y',
+        '%d-%m-%Y',
+        '%m/%d/%Y',
+        '%d/%m/%Y',
+        '%Y/%m/%d',
+        '%d/%m/%Y %H:%M:%S',
+        '%d/%m/%Y %H:%M',
+        '%Y-%m-%d %H:%M:%S'
+    ]
+    
+    date_obj = parse_date(date_str, date_formats)
+    return format_date(date_obj) if date_obj else ''
+
+
+def normalize_insurance_amount(amount_str: str) -> str:
+    """
+    Normalize insurance amount to full number (remove text like 'L', 'Lakh', etc.).
+    
+    Args:
+        amount_str: Amount string (e.g., '5L', '500000', '5 Lakh', '5 Lacs')
+        
+    Returns:
+        Numeric amount as string or empty string
+    """
+    if not amount_str or amount_str.strip() == '':
+        return ''
+    
+    amount_str = amount_str.strip().upper()
+    
+    # Remove common text patterns (order matters - longer patterns first)
+    amount_str = amount_str.replace('LAKHS', '').replace('LAKH', '')
+    amount_str = amount_str.replace('LACS', '').replace('LAC', '')
+    amount_str = amount_str.replace('CRORES', '').replace('CRORE', '').replace('CR', '')
+    amount_str = amount_str.replace('THOUSANDS', '').replace('THOUSAND', '').replace('K', '')
+    amount_str = amount_str.replace('L', '').replace(',', '').strip()
+    
+    # Try to convert to float and back to remove decimals if whole number
+    try:
+        amount = float(amount_str)
+        # If it's a small number (< 1000), it might be in lakhs
+        if amount < 1000 and amount > 0:
+            amount = amount * 100000  # Convert lakhs to full number
+        return str(int(amount)) if amount == int(amount) else str(amount)
+    except ValueError:
+        return ''
+
+
+def generate_membership_id(member_id: str, email: str) -> str:
+    """
+    Generate membership ID from member_id or email.
+    
+    Args:
+        member_id: Original member ID from CSV
+        email: Email address as fallback
+        
+    Returns:
+        Membership ID string
+    """
+    if member_id and member_id.strip():
+        return member_id.strip()
+    # Generate from email if no member_id
+    if email:
+        return f"PAI-{email.split('@')[0].upper()[:10]}"
+    return ''
+
+
+def normalize_insurance_policy_type(policy_type: str) -> str:
+    """
+    Normalize insurance policy type.
+    
+    Args:
+        policy_type: Original policy type string
+        
+    Returns:
+        Normalized policy type ('comprehensive', 'basic', or original value)
+    """
+    if not policy_type or policy_type.strip() == '':
+        return ''
+    
+    policy_type_lower = policy_type.strip().lower()
+    
+    # Check for tandem pilot -> comprehensive
+    if 'tandem' in policy_type_lower and 'pilot' in policy_type_lower:
+        return 'comprehensive'
+    
+    # Check for hobby pilot -> basic
+    if 'hobby' in policy_type_lower and 'pilot' in policy_type_lower:
+        return 'basic'
+    
+    # Return original value if no match
+    return policy_type.strip()
+
+
+def normalize_membership_type(membership_type: str) -> str:
+    """
+    Normalize membership type.
+    
+    Args:
+        membership_type: Original membership type string
+        
+    Returns:
+        Normalized membership type ('life' or 'basic')
+    """
+    if not membership_type or membership_type.strip() == '':
+        return 'basic'
+    
+    membership_type_lower = membership_type.strip().lower()
+    
+    # Check for life membership
+    if membership_type_lower == 'life':
+        return 'life'
+    
+    # Everything else is basic
+    return 'basic'
+
+
+def normalize_membership_status(membership_status: str) -> str:
+    """
+    Normalize membership status.
+    
+    Args:
+        membership_status: Original membership status string
+        
+    Returns:
+        Normalized membership status ('active' or 'inactive')
+    """
+    if not membership_status or membership_status.strip() == '':
+        return 'inactive'
+    
+    membership_status_lower = membership_status.strip().lower()
+    
+    # Check for active status
+    if membership_status_lower == 'active':
+        return 'active'
+    
+    # Everything else is inactive
+    return 'inactive'
+
+
 def merge_data(members_data: Dict[str, Dict[str, str]], 
                insurance_data: Dict[str, Dict[str, str]]) -> List[Dict[str, str]]:
     """
@@ -180,26 +334,51 @@ def merge_data(members_data: Dict[str, Dict[str, str]],
         member = members_data.get(email, {})
         insurance = insurance_data.get(email, {})
         
-        # Calculate insurance end date
-        insurance_start = insurance.get('Covearge Start date ', '').strip()
-        insurance_end = calculate_end_date(insurance_start) if insurance_start else ''
+        # Normalize all date fields to YYYY-MM-DD format
+        active_until = normalize_date(member.get('subscription_ends', ''))
+        member_since = normalize_date(member.get('user_registered', ''))
+        insurance_start = normalize_date(insurance.get('Covearge Start date ', ''))
+        insurance_end = calculate_end_date(insurance.get('Covearge Start date ', '')) if insurance.get('Covearge Start date ', '').strip() else ''
+        
+        # Normalize insurance coverage amount (remove text like 'L', 'Lakh')
+        coverage_amount = normalize_insurance_amount(insurance.get('Sum insured Opted', ''))
+        premium_amount = normalize_insurance_amount(insurance.get('premuim  Inc. GST', ''))
+        
+        # Normalize insurance policy type (tandem pilot -> comprehensive, hobby pilot -> basic)
+        policy_type = normalize_insurance_policy_type(insurance.get('Profile details of the Members ', ''))
+        
+        # Normalize membership type (Life -> life, everything else -> basic)
+        membership_type = normalize_membership_type(member.get('membership_level', ''))
+        
+        # Normalize membership status (active -> active, everything else -> inactive)
+        membership_status = normalize_membership_status(member.get('account_state', ''))
+        
+        # Generate membership ID
+        membership_id = generate_membership_id(member.get('membership_number', ''), email)
+        
+        # Get name, use email username if name is empty
+        name = member.get('display_name', '').strip()
+        if not name:
+            # Extract username from email (part before @)
+            name = email.split('@')[0] if email else ''
         
         # Create merged record with exact header sequence
         merged_record = {
-            'name': member.get('display_name', '').strip(),
+            'membership_id': membership_id,
+            'name': name,
             'email': email,
             'phone': '',  # No mapping provided
-            'active_until': member.get('subscription_ends', '').strip(),
-            'member_since': member.get('user_registered', '').strip(),
+            'active_until': active_until,
+            'member_since': member_since,
             'current_rating': member.get('rating_level_1', '').strip(),
-            'membership_type': member.get('membership_level', '').strip(),
-            'membership_status': member.get('account_state', '').strip(),
+            'membership_type': membership_type,
+            'membership_status': membership_status,
             'total_flights': '',  # No mapping provided
             'total_flight_hours': '',  # No mapping provided
             'insurance_policy_number': insurance.get('Company Employee Number', '').strip(),
-            'insurance_policy_type': insurance.get('Profile details of the Members ', '').strip(),
-            'insurance_coverage_amount': insurance.get('Sum insured Opted', '').strip(),
-            'insurance_premium_amount': insurance.get('premuim  Inc. GST', '').strip(),
+            'insurance_policy_type': policy_type,
+            'insurance_coverage_amount': coverage_amount,
+            'insurance_premium_amount': premium_amount,
             'insurance_start_date': insurance_start,
             'insurance_end_date': insurance_end,
             'insurance_status': 'Active' if insurance_start else ''
@@ -221,6 +400,7 @@ def write_output_csv(filepath: str, records: List[Dict[str, str]]):
     """
     # Define headers in exact sequence as specified
     headers = [
+        'membership_id',
         'name',
         'email',
         'phone',

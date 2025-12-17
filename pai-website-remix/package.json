@@ -14,7 +14,8 @@
     "start:docker": "./scripts/start-docker-only.sh",
     "stop": "./scripts/stop.sh",
     "reset": "./scripts/reset.sh",
-    "import-members": "tsx scripts/import-members.ts"
+    "import-members": "tsx scripts/import-members.ts",
+    "generate-import-sql": "tsx scripts/generate-import-sql.ts"
   },
   "dependencies": {
     "@react-router/node": "^7.9.2",
