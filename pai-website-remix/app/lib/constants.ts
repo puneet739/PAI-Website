@@ -6,12 +6,17 @@ export interface PilotRating {
 }
 
 export const PILOT_RATINGS: PilotRating[] = [
-  { value: 'P1', label: 'P1 - Beginner Pilot', description: 'Basic paragliding knowledge' },
-  { value: 'P2', label: 'P2 - Novice Pilot', description: 'Intermediate flying techniques' },
-  { value: 'P3', label: 'P3 - Intermediate Pilot', description: 'Advanced maneuvers' },
-  { value: 'P4', label: 'P4 - Advanced Pilot', description: 'Expert level XC flying' },
-  { value: 'P5', label: 'P5 - Master Pilot', description: 'Professional competition level' },
-  { value: 'P6', label: 'P6 - Special Pilot', description: 'Special competition level' },
+  { value: 'P1', label: 'P1 - Introduction', description: 'Basic paragliding knowledge' },
+  { value: 'P2', label: 'P2 - Student Pilot', description: 'Student flying techniques' },
+  { value: 'P3', label: 'P3 - Novice Pilot', description: 'Novice flying techniques' },
+  
+  { value: 'P4', label: 'P4 - Intermediate Pilot', description: 'Advanced maneuvers' },
+  { value: 'P5', label: 'P5 - Advanced Pilot', description: 'Expert level XC flying' },
+  { value: 'P6', label: 'P6 - Sports Tandem Pilot', description: 'Sports Tandem Pilot' },
+  { value: 'P7', label: 'P7 - Commercial Tandem Pilot', description: 'Commercial Tandem Pilotlevel' },
+  { value: 'P8', label: 'P8 - Assistant Instructor', description: 'Assistant Instructor' },
+  { value: 'P9', label: 'P9 - Instructor', description: 'Instructor' },
+  { value: 'P10', label: 'P10 - Examiner', description: 'Examiner' },
 ];
 
 /**

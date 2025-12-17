@@ -1,6 +1,4 @@
 import type { Route } from "./+types/verify-pilot";
-import { useLoaderData } from "react-router";
-import { query } from "~/lib/db.server";
 import { getRatingLabel } from "~/lib/constants";
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
