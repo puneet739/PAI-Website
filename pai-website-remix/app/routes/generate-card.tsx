@@ -108,7 +108,7 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
 
   // Generate QR code data (URL to verify member)
   const membershipId = member.membership_id || `PAI-MEM-${String(member.id).padStart(5, '0')}`;
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://pai.org.in';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://portal.paraglidingassociationofindia.org';
   const qrCodeData = `${baseUrl}/verify-pilot?membershipid=${membershipId}`;
 
   return (

@@ -66,9 +66,13 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Define policy details
     const policyDetails: Record<string, { coverage: number; premium: number }> = {
-      basic: { coverage: 2000000, premium: 2000 },
-      premium: { coverage: 5000000, premium: 5000 },
-      comprehensive: { coverage: 10000000, premium: 10000 },
+      basic: { coverage: 500000, premium: 2631 },
+      premium: { coverage: 1000000, premium: 3759 },
+      premium2: { coverage: 2000000, premium: 6767 },
+      comprehensive: { coverage: 4000000, premium: 12219 },
+      comprehensive2: { coverage: 5000000, premium: 15039 },
+      tandem1: { coverage: 500000, premium: 3750 },
+      tandem2: { coverage: 1000000, premium: 5545 },
     };
 
     const details = policyDetails[insurancePlan];
@@ -302,9 +306,13 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                   >
                     <option value="">Select a plan</option>
-                    <option value="basic">Basic - ₹2,000/year (₹20L coverage)</option>
-                    <option value="premium">Premium - ₹5,000/year (₹50L coverage)</option>
-                    <option value="comprehensive">Comprehensive - ₹10,000/year (₹1Cr coverage)</option>
+                    <option value="basic">Solo Basic  - ₹2,631/year (₹5L coverage)</option>
+                    <option value="premium">Solo Premium - ₹3,759/year (₹10L coverage)</option>
+                    <option value="premium2">Solo Premium - ₹6,767/year (₹20L coverage)</option>
+                    <option value="comprehensive">Solo Comprehensive - ₹12,219/year (₹40L coverage)</option>
+                    <option value="comprehensive2">Solo Comprehensive - ₹15,039/year (₹50L coverage)</option>
+                    <option value="tandem1">Tandem Basic  - ₹3,750/year (₹5L coverage)</option>
+                    <option value="tandem2">Tandem Basic  - ₹5,545/year (₹10L coverage)</option>
                   </select>
                 </div>
 

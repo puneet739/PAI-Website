@@ -150,9 +150,13 @@ export async function action({ request }: Route.ActionArgs) {
         
         // Define premium amounts
         const premiumAmounts: Record<string, number> = {
-          basic: 2000,
-          premium: 5000,
-          comprehensive: 10000,
+          basic: 2631,
+          premium: 3759,
+          premium2: 6767,
+          comprehensive: 12219,
+          comprehensive2: 15039,
+          tandem1: 3750,
+          tandem2: 5545 ,
         };
 
         const premium = premiumAmounts[insurance_type] || 0;

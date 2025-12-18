@@ -22,6 +22,7 @@ export async function action({ request }: Route.ActionArgs) {
   const userId = await requireUserId(request);
   const formData = await request.formData();
 
+  const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
   const address = formData.get("address") as string;
   const bloodGroup = formData.get("bloodGroup") as string;
@@ -31,9 +32,9 @@ export async function action({ request }: Route.ActionArgs) {
   try {
     await query(
       `UPDATE members 
-       SET phone = ?, address = ?, blood_group = ?, gender = ?, date_of_birth = ?
+       SET name = ?, phone = ?, address = ?, blood_group = ?, gender = ?, date_of_birth = ?
        WHERE id = ?`,
-      [phone, address, bloodGroup, gender, dateOfBirth || null, userId]
+      [name, phone, address, bloodGroup, gender, dateOfBirth || null, userId]
     );
 
     return redirect("/dashboard?profile=updated");
@@ -52,6 +53,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function EditProfile({ loaderData, actionData }: Route.ComponentProps) {
   const { member } = loaderData;
+  const [name, setName] = useState(member.name || "");
   const [phone, setPhone] = useState(member.phone || "");
   const [address, setAddress] = useState(member.address || "");
   const [bloodGroup, setBloodGroup] = useState(member.blood_group || "");
@@ -91,6 +93,23 @@ export default function EditProfile({ loaderData, actionData }: Route.ComponentP
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Personal Information</h2>
               
               <Form method="post" className="space-y-6">
+                {/* Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your full name"
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  />
+                </div>
+
                 {/* Phone */}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -159,10 +178,9 @@ export default function EditProfile({ loaderData, actionData }: Route.ComponentP
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                   >
-                    <option value="">Select Gender</option>
+                    <option value="Other">Other</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
 

@@ -151,8 +151,8 @@ describe('Insurance Request - Async Email Sending', () => {
       expect(emailParams.userEmail).toBe('john@example.com');
       expect(emailParams.phone).toBe('+919876543210');
       expect(emailParams.insurancePlan).toBe('Comprehensive');
-      expect(emailParams.coverage).toBe('₹100 Lakh');
-      expect(emailParams.premium).toBe('₹10,000');
+      expect(emailParams.coverage).toBe('₹40 Lakh');
+      expect(emailParams.premium).toBe('₹12,219');
       expect(emailParams.comments).toBe('International coverage');
       expect(emailParams.requestId).toBe(456);
     });
@@ -268,8 +268,8 @@ describe('Insurance Request - Async Email Sending', () => {
       await action({ request, params: {}, context: {} } as any);
 
       const emailParams = mockSendInsuranceRequestEmail.mock.calls[0][0];
-      expect(emailParams.coverage).toBe('₹20 Lakh');
-      expect(emailParams.premium).toBe('₹2,000');
+      expect(emailParams.coverage).toBe('₹5 Lakh');
+      expect(emailParams.premium).toBe('₹2,631');
     });
   });
 });
