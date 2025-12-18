@@ -193,17 +193,25 @@ export default function VerifyPilot() {
                           <div className="bg-sky-50 rounded-lg p-4">
                             <p className="text-sm font-semibold text-gray-700 mb-1">Membership Status</p>
                             <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                                  pilot.membership_status === "active"
-                                    ? "bg-green-100 text-green-800"
-                                    : pilot.membership_status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {pilot.membership_status.charAt(0).toUpperCase() + pilot.membership_status.slice(1)}
-                              </span>
+                              {(() => {
+                                const isExpired = pilot.active_until && new Date(pilot.active_until) < new Date();
+                                const displayStatus = isExpired ? "Need to Renew" : pilot.membership_status;
+                                const statusColor = isExpired 
+                                  ? "bg-orange-100 text-orange-800"
+                                  : pilot.membership_status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : pilot.membership_status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800";
+                                
+                                return (
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${statusColor}`}
+                                  >
+                                    {isExpired ? displayStatus : displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
 
