@@ -26,7 +26,7 @@ SMTP_PASSWORD=your-smtp-password
 RESEND_API_KEY=re_your_api_key_here
 
 # Email Addresses
-FROM_EMAIL=noreply@pai.org.in
+FROM_EMAIL=noreply@pgaoi.org
 BASE_EMAIL=base@pai.org
 ```
 

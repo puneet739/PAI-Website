@@ -37,7 +37,7 @@ You'll be redirected to your dashboard showing:
 
 | Email | Password | Type | Rating | Use Case |
 |-------|----------|------|--------|----------|
-| admin@pai.org.in | password123 | Instructor | Instructor | Admin/instructor view |
+| admin@pgaoi.org | password123 | Instructor | Instructor | Admin/instructor view |
 | pilot@example.com | password123 | Premium | P4 | Experienced pilot |
 | beginner@example.com | password123 | Basic | P2 | New member |
 

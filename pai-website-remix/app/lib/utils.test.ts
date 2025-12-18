@@ -86,7 +86,7 @@ describe('Utils - isValidEmail', () => {
   it('should validate correct email addresses', () => {
     expect(isValidEmail('test@example.com')).toBe(true);
     expect(isValidEmail('user.name@domain.co.in')).toBe(true);
-    expect(isValidEmail('admin@pai.org.in')).toBe(true);
+    expect(isValidEmail('admin@pgaoi.org')).toBe(true);
   });
 
   it('should reject invalid email addresses', () => {

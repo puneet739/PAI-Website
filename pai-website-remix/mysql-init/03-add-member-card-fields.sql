@@ -17,7 +17,7 @@ UPDATE members SET
     blood_group = 'O+',
     gender = 'Male',
     date_of_birth = '1985-08-15'
-WHERE email = 'admin@pai.org.in';
+WHERE email = 'admin@pgaoi.org';
 
 UPDATE members SET 
     address = '456, Skyline Apartments, Kamshet, Maharashtra, 410405',

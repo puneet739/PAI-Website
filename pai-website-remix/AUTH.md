@@ -29,7 +29,7 @@ All demo accounts use the password: **`password123`**
 
 | Email | Role | Rating | Flights | Hours |
 |-------|------|--------|---------|-------|
-| admin@pai.org.in | Instructor | Instructor | 250 | 450.5 |
+| admin@pgaoi.org | Instructor | Instructor | 250 | 450.5 |
 | pilot@example.com | Premium | P4 | 85 | 120.75 |
 | beginner@example.com | Basic | P2 | 15 | 22.5 |
 

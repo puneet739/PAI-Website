@@ -19,7 +19,7 @@ const emailConfig = {
 
 // Base email address for admin notifications
 const BASE_EMAIL = process.env.BASE_EMAIL || "base@pgaoi.org";
-const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pai.org.in";
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pgaoi.org";
 
 // Create reusable transporter for SMTP
 const transporter = nodemailer.createTransport(emailConfig);

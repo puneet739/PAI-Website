@@ -14,7 +14,7 @@ export function Membership() {
         <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm bg-white dark:bg-gray-950">
           <h3 className="font-semibold mb-2">Join now</h3>
           <p className="text-gray-700 dark:text-gray-300">Membership portal coming soon. Meanwhile, write to us:</p>
-          <p className="mt-3"><a className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-white bg-gradient-to-r from-sky-500 to-orange-500 shadow hover:opacity-95 transition w-full sm:w-auto" href="mailto:info@pai.org.in">info@pai.org.in</a></p>
+          <p className="mt-3"><a className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-white bg-gradient-to-r from-sky-500 to-orange-500 shadow hover:opacity-95 transition w-full sm:w-auto" href="mailto:mc@pgaoi.org">mc@pgaoi.org</a></p>
         </div>
       </div>
     </section>

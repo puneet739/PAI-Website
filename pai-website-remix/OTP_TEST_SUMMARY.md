@@ -129,7 +129,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
-FROM_EMAIL=noreply@pai.org.in
+FROM_EMAIL=noreply@pgaoi.org
 ```
 
 2. **Update test email address** in `otp.integration.test.ts`:

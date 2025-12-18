@@ -314,7 +314,7 @@ export default function Terms() {
                 Official PAI communications will be sent via:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Email from @pai.org.in domain</li>
+                <li>Email from @pgaoi.org domain</li>
                 <li>Announcements on this official website</li>
                 <li>PAI's official Facebook page</li>
               </ul>

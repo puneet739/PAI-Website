@@ -19,7 +19,7 @@ When `IS_DEMO_SITE=true`, the following features are enabled:
 ### 1. Demo Credentials Display
 - The login page will display demo account credentials
 - Demo accounts shown:
-  - **Admin:** admin@pai.org.in (ADMIN role)
+  - **Admin:** admin@pgaoi.org (ADMIN role)
   - **Instructor:** instructor@example.com (INSTRUCTOR role)
   - **Pilot:** pilot@example.com (USER role)
   - **Beginner:** beginner@example.com (USER role)

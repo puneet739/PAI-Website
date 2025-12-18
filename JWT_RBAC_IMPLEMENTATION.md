@@ -18,7 +18,7 @@ This document describes the JWT authentication and role-based access control (RB
 - Default role is USER (role_id: 2)
 
 #### Demo Users Updated
-- `admin@pai.org.in` - ADMIN role
+- `admin@pgaoi.org` - ADMIN role
 - `instructor@example.com` - INSTRUCTOR role (NEW)
 - `pilot@example.com` - USER role
 - `beginner@example.com` - USER role
@@ -163,7 +163,7 @@ To use this system in production:
    ```
 
 4. **Test Role-Based Access**:
-   - Login as admin@pai.org.in - Should see Admin Panel and Manage Users
+   - Login as admin@pgaoi.org - Should see Admin Panel and Manage Users
    - Login as instructor@example.com - Should see Admin Panel and Manage Users
    - Login as pilot@example.com - Should NOT see admin features
 
