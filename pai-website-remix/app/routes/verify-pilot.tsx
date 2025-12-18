@@ -75,6 +75,25 @@ export default function VerifyPilot() {
     });
   };
 
+  // Mask membership ID - show only last 3 digits
+  const maskMembershipId = (membershipId: string | null, pilotId: number) => {
+    const id = membershipId || `PAI-MEM-${String(pilotId).padStart(5, '0')}`;
+    if (id.length <= 3) return id;
+    return '•••' + id.slice(-3);
+  };
+
+  // Mask policy number - show only last 4 digits
+  const maskPolicyNumber = (policyNumber: string) => {
+    if (policyNumber.length <= 4) return policyNumber;
+    return '••••' + policyNumber.slice(-4);
+  };
+
+  // Check if date is valid (not expired)
+  const isDateValid = (dateString: string | null) => {
+    if (!dateString) return false;
+    return new Date(dateString) >= new Date();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50">
       {/* Header */}
@@ -177,7 +196,7 @@ export default function VerifyPilot() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-600">Membership ID:</span>
                             <span className="text-lg font-bold text-sky-600">
-                              {pilot.membership_id || `PAI-MEM-${String(pilot.id).padStart(5, '0')}`}
+                              {maskMembershipId(pilot.membership_id, pilot.id)}
                             </span>
                           </div>
                         </div>
@@ -215,29 +234,34 @@ export default function VerifyPilot() {
                             </div>
                           </div>
 
-                          {/* Valid Until */}
+                          {/* Membership Validity */}
                           {pilot.active_until && (
                             <div className="bg-sky-50 rounded-lg p-4">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Valid Until</p>
-                              <p className="text-lg font-bold text-gray-900">{formatDate(pilot.active_until)}</p>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Membership Validity</p>
+                              <p className="text-lg font-bold text-gray-900">
+                                {isDateValid(pilot.active_until) ? (
+                                  <span className="text-green-600">Valid</span>
+                                ) : (
+                                  <span className="text-red-600">Expired</span>
+                                )}
+                              </p>
                             </div>
                           )}
 
                           {/* Insurance */}
                           {pilot.insurance_amount && (
                             <div className="bg-sky-50 rounded-lg p-4">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Insurance Coverage</p>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Insurance Status</p>
                               <p className="text-lg font-bold text-gray-900">
-                                ₹{(pilot.insurance_amount / 100000).toFixed(0)}L
+                                {isDateValid(pilot.insurance_valid_until) ? (
+                                  <span className="text-green-600">Valid</span>
+                                ) : (
+                                  <span className="text-red-600">Expired</span>
+                                )}
                               </p>
                               {pilot.insurance_policy_number && (
                                 <p className="text-xs text-gray-600 mt-1">
-                                  Policy: {pilot.insurance_policy_number}
-                                </p>
-                              )}
-                              {pilot.insurance_valid_until && (
-                                <p className="text-xs text-gray-600">
-                                  Valid until: {formatDate(pilot.insurance_valid_until)}
+                                  Policy: {maskPolicyNumber(pilot.insurance_policy_number)}
                                 </p>
                               )}
                             </div>
