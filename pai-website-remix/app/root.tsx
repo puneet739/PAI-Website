@@ -148,10 +148,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
           <p className="text-sm text-gray-500 dark:text-gray-500">
             If this problem persists, please contact support at{" "}
             <a 
-              href="mailto:support@pai.org.in" 
+              href="mailto:mc@pgaoi.org" 
               className="text-sky-600 dark:text-sky-400 hover:underline"
             >
-              support@pai.org.in
+              mc@pgaoi.org
             </a>
           </p>
         </div>

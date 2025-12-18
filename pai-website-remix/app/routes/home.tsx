@@ -70,8 +70,19 @@ export default function Home() {
         </div>
 
         {/* Footer Info */}
-        <div className="pt-8 text-sm text-gray-500">
-          <p>For support, contact us at <a href="mailto:support@pai.org.in" className="text-sky-600 hover:underline">support@pai.org.in</a></p>
+        <div className="pt-8 space-y-3">
+          <p className="text-sm text-gray-500">
+            For support, contact us at <a href="mailto:mc@pgaoi.org" className="text-sky-600 hover:underline">mc@pgaoi.org</a>
+          </p>
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+            <Link to="/terms" className="hover:text-sky-600 hover:underline">
+              Terms & Conditions
+            </Link>
+            <span>•</span>
+            <Link to="/privacy" className="hover:text-sky-600 hover:underline">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </main>

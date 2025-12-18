@@ -138,6 +138,15 @@ export default function Register() {
             <a href="/" className="block text-sm text-sky-600 dark:text-sky-400 hover:underline">
               ← Back to home
             </a>
+            <div className="flex items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 pt-2">
+              <a href="/terms" className="hover:text-sky-600 dark:hover:text-sky-400 hover:underline">
+                Terms
+              </a>
+              <span>•</span>
+              <a href="/privacy" className="hover:text-sky-600 dark:hover:text-sky-400 hover:underline">
+                Privacy
+              </a>
+            </div>
           </div>
         </Form>
       </div>

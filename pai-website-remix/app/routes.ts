@@ -26,6 +26,8 @@ export default [
   route("manage-users", "routes/manage-users.tsx"),
   route("logout", "routes/logout.tsx"),
   route("api/search-pilot", "routes/api.search-pilot.tsx"),
+  route("terms", "routes/terms.tsx"),
+  route("privacy", "routes/privacy.tsx"),
   // Catch-all route for 404s and DevTools requests (must be last)
   route("*", "routes/$.tsx"),
 ] satisfies RouteConfig;
