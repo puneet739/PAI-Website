@@ -341,7 +341,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Member Information</h3>
-                <a
+                {/* Edit Profile button temporarily hidden */}
+                {/* <a
                   href="/edit-profile"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-sky-900/30 transition text-sm font-medium"
                 >
@@ -349,7 +350,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Edit Profile
-                </a>
+                </a> */}
               </div>
               
               {/* Profile Image Section */}

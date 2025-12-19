@@ -8,6 +8,9 @@ import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState } from "react";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  // Temporarily disable edit profile functionality
+  throw redirect("/dashboard");
+  
   const userId = await requireUserId(request);
   const member = await getMemberById(userId);
 

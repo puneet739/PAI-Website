@@ -33,7 +33,7 @@ export default function VerifyPilot() {
   const [hasSearched, setHasSearched] = useState(false);
 
   const performSearch = async (query: string) => {
-    if (!query.trim()) return;
+    if (!query.trim() || query.trim().length < 3) return;
 
     setIsSearching(true);
     setHasSearched(true);
@@ -75,11 +75,36 @@ export default function VerifyPilot() {
     });
   };
 
-  // Mask membership ID - show only last 3 digits
-  const maskMembershipId = (membershipId: string | null, pilotId: number) => {
-    const id = membershipId || `PAI-MEM-${String(pilotId).padStart(5, '0')}`;
-    if (id.length <= 3) return id;
-    return '•••' + id.slice(-3);
+  // Mask pilot name at random positions
+  const maskPilotName = (name: string, pilotId: number) => {
+    if (name.length <= 2) return name;
+    
+    // Use pilotId as seed for consistent masking per pilot
+    const seed = pilotId;
+    const chars = name.split('');
+    const numToMask = Math.max(1, Math.floor(name.length * 0.4)); // Mask ~40% of characters
+    
+    // Generate random positions based on seed
+    const positions = new Set<number>();
+    let tempSeed = seed;
+    
+    while (positions.size < numToMask) {
+      // Simple pseudo-random number generator using seed
+      tempSeed = (tempSeed * 9301 + 49297) % 233280;
+      const randomPos = Math.floor((tempSeed / 233280) * name.length);
+      
+      // Don't mask spaces
+      if (chars[randomPos] !== ' ') {
+        positions.add(randomPos);
+      }
+    }
+    
+    // Mask the selected positions
+    positions.forEach(pos => {
+      chars[pos] = '•';
+    });
+    
+    return chars.join('');
   };
 
   // Mask policy number - show only last 4 digits
@@ -135,7 +160,7 @@ export default function VerifyPilot() {
             />
             <button
               type="submit"
-              disabled={isSearching || !searchQuery.trim()}
+              disabled={isSearching || !searchQuery.trim() || searchQuery.trim().length < 3}
               className="px-8 py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSearching ? (
@@ -192,11 +217,11 @@ export default function VerifyPilot() {
                       {/* Pilot Details */}
                       <div className="flex-1 space-y-4">
                         <div>
-                          <h2 className="text-3xl font-bold text-gray-900 mb-2">{pilot.name}</h2>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-2">{maskPilotName(pilot.name, pilot.id)}</h2>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-600">Membership ID:</span>
                             <span className="text-lg font-bold text-sky-600">
-                              {maskMembershipId(pilot.membership_id, pilot.id)}
+                              {pilot.membership_id || `PAI-MEM-${String(pilot.id).padStart(5, '0')}`}
                             </span>
                           </div>
                         </div>
