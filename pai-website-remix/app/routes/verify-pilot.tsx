@@ -124,9 +124,11 @@ export default function VerifyPilot() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-gray-900">
-            PAI
-          </Link>
+          <img 
+              src="/logo.png" 
+              alt="PAI Logo" 
+              className="h-12 w-auto"
+            />
           <Link
             to="/"
             className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2"
