@@ -167,7 +167,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   doc.fontSize(7)
      .font('Helvetica')
      .fillColor('#e0f2fe')
-     .text('For assistance, contact: mc@pgaoi.org', 20, 230);
+     .text('For assistance, contact: support@pgaoi.org', 20, 230);
 
   // Finalize PDF
   doc.end();

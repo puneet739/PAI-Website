@@ -181,7 +181,7 @@ export default function Privacy() {
                 <li><strong>Withdrawal:</strong> Withdraw consent for data processing (where applicable)</li>
               </ul>
               <p className="mt-4">
-                To exercise these rights, contact us at <a href="mailto:mc@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">mc@pgaoi.org</a>
+                To exercise these rights, contact us at <a href="mailto:support@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">support@pgaoi.org</a>
               </p>
             </div>
           </section>
@@ -285,7 +285,7 @@ export default function Privacy() {
                   Goa, INDIA
                 </p>
                 <p className="text-sm mt-3">
-                  Email: <a href="mailto:mc@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">mc@pgaoi.org</a>
+                  Email: <a href="mailto:support@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">support@pgaoi.org</a>
                 </p>
               </div>
             </div>

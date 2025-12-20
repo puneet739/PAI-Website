@@ -410,7 +410,7 @@ export default function Terms() {
                   Goa, INDIA
                 </p>
                 <p className="text-sm mt-3">
-                  Email: <a href="mailto:mc@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">mc@pgaoi.org</a>
+                  Email: <a href="mailto:support@pgaoi.org" className="text-sky-600 dark:text-sky-400 hover:underline">support@pgaoi.org</a>
                 </p>
               </div>
             </div>

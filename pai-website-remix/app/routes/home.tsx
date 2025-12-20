@@ -72,7 +72,7 @@ export default function Home() {
         {/* Footer Info */}
         <div className="pt-8 space-y-3">
           <p className="text-sm text-gray-500">
-            For support, contact us at <a href="mailto:mc@pgaoi.org" className="text-sky-600 hover:underline">mc@pgaoi.org</a>
+            For support, contact us at <a href="mailto:support@pgaoi.org" className="text-sky-600 hover:underline">support@pgaoi.org</a>
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
             <Link to="/terms" className="hover:text-sky-600 hover:underline">
