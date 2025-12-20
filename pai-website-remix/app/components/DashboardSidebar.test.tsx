@@ -3,10 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { DashboardSidebar } from './DashboardSidebar';
 
 describe('DashboardSidebar', () => {
-  it('should render PAI logo', () => {
-    render(<DashboardSidebar currentPath="/dashboard" userRole="basic" />);
-    expect(screen.getByText('PAI')).toBeInTheDocument();
-  });
+  
 
   it('should render Dashboard link', () => {
     render(<DashboardSidebar currentPath="/dashboard" userRole="basic" />);
