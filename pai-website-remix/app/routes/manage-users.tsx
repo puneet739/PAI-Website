@@ -30,7 +30,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     searchResults = await query(
       `SELECT id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
-              created_at 
+              address, blood_group, gender, date_of_birth, created_at 
        FROM members 
        WHERE name LIKE ? OR email LIKE ?
        ORDER BY name
@@ -44,7 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const users = await query(
       `SELECT id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
-              created_at 
+              address, blood_group, gender, date_of_birth, created_at 
        FROM members 
        WHERE id = ?`,
       [userId_param]
@@ -83,6 +83,11 @@ export async function action({ request }: Route.ActionArgs) {
     const name = formData.get("name");
     const email = formData.get("email");
     const phone = formData.get("phone");
+    const address = formData.get("address");
+    const bloodGroup = formData.get("bloodGroup");
+    const gender = formData.get("gender");
+    const dateOfBirth = formData.get("dateOfBirth");
+    const memberSince = formData.get("memberSince");
     const membershipType = formData.get("membershipType");
     const membershipStatus = formData.get("membershipStatus");
     const activeUntil = formData.get("activeUntil");
@@ -92,7 +97,8 @@ export async function action({ request }: Route.ActionArgs) {
 
     await query(
       `UPDATE members 
-       SET name = ?, email = ?, phone = ?, membership_type = ?, 
+       SET name = ?, email = ?, phone = ?, address = ?, blood_group = ?, 
+           gender = ?, date_of_birth = ?, created_at = ?, membership_type = ?, 
            membership_status = ?, active_until = ?, pilot_rating = ?, 
            total_flights = ?, total_flight_hours = ?
        WHERE id = ?`,
@@ -100,6 +106,11 @@ export async function action({ request }: Route.ActionArgs) {
         name,
         email,
         phone || null,
+        address || null,
+        bloodGroup || null,
+        gender || null,
+        dateOfBirth || null,
+        memberSince || null,
         membershipType,
         membershipStatus,
         activeUntil || null,
@@ -314,9 +325,72 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           Phone
                         </label>
                         <input
-                          type="text"
+                          type="tel"
                           name="phone"
                           defaultValue={selectedUser.phone || ''}
+                          placeholder="+91-XXXXXXXXXX"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Date of Birth
+                        </label>
+                        <input
+                          type="date"
+                          name="dateOfBirth"
+                          defaultValue={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth).toISOString().split('T')[0] : ''}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Gender
+                        </label>
+                        <select
+                          name="gender"
+                          defaultValue={selectedUser.gender || ''}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Blood Group
+                        </label>
+                        <select
+                          name="bloodGroup"
+                          defaultValue={selectedUser.blood_group || ''}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="">Select Blood Group</option>
+                          <option value="A+">A+</option>
+                          <option value="A-">A-</option>
+                          <option value="B+">B+</option>
+                          <option value="B-">B-</option>
+                          <option value="AB+">AB+</option>
+                          <option value="AB-">AB-</option>
+                          <option value="O+">O+</option>
+                          <option value="O-">O-</option>
+                        </select>
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Address
+                        </label>
+                        <textarea
+                          name="address"
+                          defaultValue={selectedUser.address || ''}
+                          rows={3}
+                          placeholder="Full address including city, state, and pincode"
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
                       </div>
@@ -370,6 +444,18 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           <option value="inactive">Inactive</option>
                           <option value="pending">Pending</option>
                         </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Member Since
+                        </label>
+                        <input
+                          type="date"
+                          name="memberSince"
+                          defaultValue={selectedUser.created_at ? new Date(selectedUser.created_at).toISOString().split('T')[0] : ''}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
                       </div>
 
                       <div>
