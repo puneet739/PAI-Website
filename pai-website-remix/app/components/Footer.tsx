@@ -4,14 +4,8 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">
           Developed and contributed by{" "}
-          <span className="font-medium text-gray-900 dark:text-white">Puneet Behl</span>
-          {" • "}
-          <a 
-            href="mailto:puneet739@gmail.com" 
-            className="text-sky-600 dark:text-sky-400 hover:underline"
-          >
-            puneet739@gmail.com
-          </a>
+          <span className="font-medium text-gray-900 dark:text-white"> <a  href="mailto:puneet739@gmail.com" className="text-sky-600 dark:text-sky-400 hover:underline">Puneet Behl</a></span>
+          
         </div>
       </div>
     </footer>
