@@ -119,6 +119,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Here's your PAI member overview
+            <br />
+            To make any change to your profile, send a mail to support@pgaoi.org
           </p>
         </div>
 
