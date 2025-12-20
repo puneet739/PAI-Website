@@ -144,9 +144,11 @@ export function DashboardSidebar({ currentPath, userRole }: DashboardSidebarProp
       >
         <div className="p-6">
           <a href="/" className="flex items-center gap-2 mb-8">
-            <span className="text-2xl font-bold bg-gradient-to-r from-sky-500 to-orange-500 bg-clip-text text-transparent">
-              PAI
-            </span>
+            <img 
+              src="/logo.png" 
+              alt="PAI Logo" 
+              className="h-12 w-auto"
+            />
           </a>
 
           <nav className="space-y-2">

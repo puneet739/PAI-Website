@@ -17,8 +17,10 @@ const emailConfig = {
   },
 };
 
-// Base email address for admin notifications
-const BASE_EMAIL = process.env.BASE_EMAIL || "base@pgaoi.org";
+// Base email address for admin notifications (supports CSV for multiple emails)
+const BASE_EMAIL_RAW = process.env.BASE_EMAIL || "base@pgaoi.org";
+const BASE_EMAIL = BASE_EMAIL_RAW.split(',').map(email => email.trim());
+const BASE_EMAIL_STRING = BASE_EMAIL_RAW; // Keep original string for display in emails
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@pgaoi.org";
 
 // Create reusable transporter for SMTP
@@ -149,7 +151,7 @@ export async function sendMembershipRequestEmail(data: MembershipRequestEmail) {
         <li>Your membership will be activated upon verification</li>
       </ol>
 
-      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      <p>If you have any questions, please contact us at ${BASE_EMAIL_STRING}</p>
       
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       <p style="color: #6b7280; font-size: 12px;">
@@ -241,7 +243,7 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
         <li>Your insurance policy will be activated upon verification</li>
       </ol>
 
-      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      <p>If you have any questions, please contact us at ${BASE_EMAIL_STRING}</p>
       
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       <p style="color: #6b7280; font-size: 12px;">
@@ -333,7 +335,7 @@ export async function sendRatingUpgradeRequestEmail(data: RatingUpgradeRequestEm
         <li>Your rating will be upgraded upon approval and verification</li>
       </ol>
 
-      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      <p>If you have any questions, please contact us at ${BASE_EMAIL_STRING}</p>
       
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       <p style="color: #6b7280; font-size: 12px;">
@@ -416,7 +418,7 @@ export async function sendEmailVerificationOTP(data: EmailVerificationOTPEmail) 
 
       <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
         <p style="margin: 0; color: #991b1b; font-size: 14px;">
-          <strong>Security Notice:</strong> If you did not create an account with PAI, please ignore this email or contact us at ${BASE_EMAIL}
+          <strong>Security Notice:</strong> If you did not create an account with PAI, please ignore this email or contact us at ${BASE_EMAIL_STRING}
         </p>
       </div>
 
@@ -472,7 +474,7 @@ export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
 
       <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
         <p style="margin: 0; color: #991b1b; font-size: 14px;">
-          <strong>Security Notice:</strong> If you did not request this password reset, please ignore this email or contact us immediately at ${BASE_EMAIL}
+          <strong>Security Notice:</strong> If you did not request this password reset, please ignore this email or contact us immediately at ${BASE_EMAIL_STRING}
         </p>
       </div>
 
@@ -536,7 +538,7 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
         <li>Your membership will be renewed for 1 year upon verification</li>
       </ol>
 
-      <p>If you have any questions, please contact us at ${BASE_EMAIL}</p>
+      <p>If you have any questions, please contact us at ${BASE_EMAIL_STRING}</p>
       
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       <p style="color: #6b7280; font-size: 12px;">
