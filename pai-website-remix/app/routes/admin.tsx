@@ -88,6 +88,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { query } = await import("~/lib/db.server");
+  const { getMemberById } = await import("~/lib/auth.server");
   
   // Require ADMIN or INSTRUCTOR role
   const { userId } = await requireAdminOrInstructor(request);
@@ -127,17 +128,81 @@ export async function action({ request }: Route.ActionArgs) {
 
   // If approved, handle based on request type
   if (status === "approved") {
+    // Load actor for audit logs
+    const actor = await getMemberById(userId);
+
     if (request_type === "new_membership") {
+      // Capture before state
+      const beforeRows = await query<{ membership_status: string; active_until: any }>(
+        "SELECT membership_status, active_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const before = beforeRows[0] || null;
+
       // Activate member and extend validity for 1 year
       await query(
         "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
         [member_id]
       );
+
+      // Capture after state
+      const afterRows = await query<{ membership_status: string; active_until: any }>(
+        "SELECT membership_status, active_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const after = afterRows[0] || null;
+
+      // Compute changes
+      const changes: any = {};
+      if (before && after) {
+        if (before.membership_status !== after.membership_status) {
+          changes.membership_status = { old: before.membership_status, new: after.membership_status };
+        }
+        const o = before.active_until instanceof Date ? before.active_until.toISOString().slice(0,10) : before.active_until;
+        const n = after.active_until instanceof Date ? after.active_until.toISOString().slice(0,10) : after.active_until;
+        if (o !== n) {
+          changes.active_until = { old: before.active_until, new: after.active_until };
+        }
+      }
+
+      await query(
+        "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+        [member_id, userId, actor?.name || "Unknown", "approve_new_membership", JSON.stringify(changes)]
+      );
     } else if (request_type === "membership_renewal") {
+      const beforeRows = await query<{ membership_status: string; active_until: any }>(
+        "SELECT membership_status, active_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const before = beforeRows[0] || null;
+
       // Renew membership for 1 year from current date
       await query(
         "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
         [member_id]
+      );
+
+      const afterRows = await query<{ membership_status: string; active_until: any }>(
+        "SELECT membership_status, active_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const after = afterRows[0] || null;
+
+      const changes: any = {};
+      if (before && after) {
+        if (before.membership_status !== after.membership_status) {
+          changes.membership_status = { old: before.membership_status, new: after.membership_status };
+        }
+        const o = before.active_until instanceof Date ? before.active_until.toISOString().slice(0,10) : before.active_until;
+        const n = after.active_until instanceof Date ? after.active_until.toISOString().slice(0,10) : after.active_until;
+        if (o !== n) {
+          changes.active_until = { old: before.active_until, new: after.active_until };
+        }
+      }
+
+      await query(
+        "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+        [member_id, userId, actor?.name || "Unknown", "approve_membership_renewal", JSON.stringify(changes)]
       );
     } else if (request_type === "insurance") {
       // Get insurance details from the request
@@ -170,6 +235,13 @@ export async function action({ request }: Route.ActionArgs) {
           "INSERT INTO insurance_policies (member_id, policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status) VALUES (?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'active')",
           [member_id, policyNumber, insurance_type, coverage_amount, premium]
         );
+
+        // Audit log for insurance policy creation
+        const changes = { policy_number: { old: null, new: policyNumber }, policy_type: { old: null, new: insurance_type }, coverage_amount: { old: null, new: coverage_amount }, premium_amount: { old: null, new: premium } };
+        await query(
+          "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+          [member_id, userId, actor?.name || "Unknown", "create_insurance_policy", JSON.stringify(changes)]
+        );
       }
     } else if (request_type === "rating_upgrade") {
       // Get requested rating from the request
@@ -181,10 +253,33 @@ export async function action({ request }: Route.ActionArgs) {
       if (ratingDetails.length > 0) {
         const { requested_rating } = ratingDetails[0];
         
+        // Capture before
+        const beforeRows = await query<{ pilot_rating: string }>(
+          "SELECT pilot_rating FROM members WHERE id = ?",
+          [member_id]
+        );
+        const before = beforeRows[0] || null;
+
         // Update member's pilot rating
         await query(
           "UPDATE members SET pilot_rating = ? WHERE id = ?",
           [requested_rating, member_id]
+        );
+
+        const afterRows = await query<{ pilot_rating: string }>(
+          "SELECT pilot_rating FROM members WHERE id = ?",
+          [member_id]
+        );
+        const after = afterRows[0] || null;
+
+        const changes: any = {};
+        if (before && after && before.pilot_rating !== after.pilot_rating) {
+          changes.pilot_rating = { old: before.pilot_rating, new: after.pilot_rating };
+        }
+
+        await query(
+          "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+          [member_id, userId, actor?.name || "Unknown", "approve_rating_upgrade", JSON.stringify(changes)]
         );
       }
     }

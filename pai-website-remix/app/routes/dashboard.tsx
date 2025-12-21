@@ -35,6 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     "SELECT id, title, event_type, location, start_date, end_date FROM events WHERE start_date >= CURDATE() AND is_published = TRUE ORDER BY start_date ASC LIMIT 5"
   );
 
+
   // Check for success messages
   const url = new URL(request.url);
   const applicationSuccess = url.searchParams.get("application") === "success";
