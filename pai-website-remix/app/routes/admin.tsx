@@ -1,6 +1,7 @@
 import type { Route } from "./+types/admin";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { useState } from "react";
 
 interface MemberRequest {
   id: number;
@@ -199,6 +200,27 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+// Component for expandable details text
+function ExpandableDetails({ text, maxLength = 50 }: { text: string; maxLength?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (text.length <= maxLength) {
+    return <span>{text}</span>;
+  }
+  
+  return (
+    <div>
+      <span>{isExpanded ? text : `${text.substring(0, maxLength)}...`}</span>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="ml-2 text-sky-600 dark:text-sky-400 hover:underline text-xs font-medium"
+      >
+        {isExpanded ? 'Show Less' : 'Show More'}
+      </button>
+    </div>
+  );
+}
+
 export default function Admin({ loaderData }: Route.ComponentProps) {
   const { member, pendingRequests, recentRequests, pagination } = loaderData;
   const actionData = useActionData<typeof action>();
@@ -260,7 +282,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar currentPath="/admin" userRole={member.role_name} />
 
-      <div className="flex-1 lg:ml-0">
+      <div className="flex-1 lg:ml-0 min-w-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
           <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
             <div className="ml-12 lg:ml-0">
@@ -273,7 +295,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
           </div>
         </header>
 
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
           {/* Success Message */}
           {actionData?.success && (
             <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
@@ -325,11 +347,11 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
           </div>
 
           {/* Pending Requests Table */}
-          <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8">
+          <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mb-8 overflow-hidden">
             <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Pending Requests</h2>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
               {pendingRequests.length > 0 ? (
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900">
@@ -362,9 +384,9 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                           <div className="text-sm text-gray-900 dark:text-white">{request.email}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">{request.phone}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate">
-                            {request.details}
+                        <td className="px-6 py-4 max-w-xs">
+                          <div className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                            <ExpandableDetails text={request.details} maxLength={50} />
                           </div>
                           {request.requested_rating && (
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -426,11 +448,11 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
 
           {/* Recent Requests */}
           {recentRequests.length > 0 && (
-            <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Processed Requests</h2>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
@@ -459,9 +481,9 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                           <div className="text-xs text-gray-500 dark:text-gray-400">{request.email}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">{request.phone}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                            {request.details}
+                        <td className="px-6 py-4 max-w-xs">
+                          <div className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                            <ExpandableDetails text={request.details} maxLength={50} />
                           </div>
                           {request.requested_rating && (
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
