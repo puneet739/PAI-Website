@@ -148,6 +148,9 @@ export default function VerifyPilot() {
           <p className="text-lg text-gray-600">
             Search by pilot name or membership ID to verify credentials
           </p>
+          <p className="mt-1 text-sm text-red-600">
+            (If you see incorrecrt details, they need to be updated, please write to support@pgaoi.org)
+          </p>
         </div>
 
         {/* Search Form */}

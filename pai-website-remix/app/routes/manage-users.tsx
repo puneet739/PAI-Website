@@ -24,11 +24,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   let searchResults: any[] = [];
   let selectedUser: any = null;
   let userInsurance: any = null;
+  let auditLogs: any[] = [];
 
   // Search for users if query provided
   if (searchQuery) {
     searchResults = await query(
-      `SELECT id, name, email, phone, membership_type, membership_status, 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
               address, blood_group, gender, date_of_birth, created_at 
        FROM members 
@@ -42,7 +43,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Load selected user details
   if (userId_param) {
     const users = await query(
-      `SELECT id, name, email, phone, membership_type, membership_status, 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
               address, blood_group, gender, date_of_birth, created_at 
        FROM members 
@@ -62,18 +63,25 @@ export async function loader({ request }: Route.LoaderArgs) {
       if (insurancePolicies.length > 0) {
         userInsurance = insurancePolicies[0];
       }
+
+      // Load recent audit logs for this user
+      auditLogs = await query(
+        `SELECT id, actor_name, action, changes, created_at FROM audit_logs WHERE member_id = ? ORDER BY created_at DESC LIMIT 10`,
+        [userId_param]
+      );
     }
   }
 
-  return { member, searchResults, selectedUser, userInsurance, searchQuery };
+  return { member, searchResults, selectedUser, userInsurance, auditLogs, searchQuery };
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
   const { query } = await import("~/lib/db.server");
+  const { getMemberById } = await import("~/lib/auth.server");
   
   // Require ADMIN or INSTRUCTOR role
-  await requireAdminOrInstructor(request);
+  const { userId } = await requireAdminOrInstructor(request);
 
   const formData = await request.formData();
   const action = formData.get("_action");
@@ -91,9 +99,20 @@ export async function action({ request }: Route.ActionArgs) {
     const membershipType = formData.get("membershipType");
     const membershipStatus = formData.get("membershipStatus");
     const activeUntil = formData.get("activeUntil");
-    const pilotRating = formData.get("pilotRating");
+    const membershipId = formData.get("membershipId");
+    // Support multiple pilot ratings
+    const pilotRatings = formData.getAll("pilotRating");
     const totalFlights = formData.get("totalFlights");
     const totalFlightHours = formData.get("totalFlightHours");
+
+    // Load existing member to compute changes
+    const existingMembers = await query(
+      `SELECT id, membership_id, name, email, phone, address, blood_group, gender, date_of_birth, created_at, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours 
+       FROM members WHERE id = ?`,
+      [targetUserId]
+    );
+
+    const before = existingMembers[0] || null;
 
     await query(
       `UPDATE members 
@@ -114,12 +133,68 @@ export async function action({ request }: Route.ActionArgs) {
         membershipType,
         membershipStatus,
         activeUntil || null,
-        pilotRating,
+        (pilotRatings as string[]).join(',') || null,
         parseInt(totalFlights as string) || 0,
         parseFloat(totalFlightHours as string) || 0,
         targetUserId
       ]
     );
+
+    // Update membership_id separately if provided (kept separate to avoid breaking positional params)
+    if (typeof membershipId === 'string') {
+      await query(
+        `UPDATE members SET membership_id = ? WHERE id = ?`,
+        [membershipId || null, targetUserId]
+      );
+    }
+
+    // Compute change set
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (before) {
+      const fields = [
+        ["membership_id", membershipId || null],
+        ["name", name],
+        ["email", email],
+        ["phone", phone || null],
+        ["address", address || null],
+        ["blood_group", bloodGroup || null],
+        ["gender", gender || null],
+        ["date_of_birth", dateOfBirth || null],
+        ["created_at", memberSince || null],
+        ["membership_type", membershipType],
+        ["membership_status", membershipStatus],
+        ["active_until", activeUntil || null],
+        ["pilot_rating", (pilotRatings as string[]).join(',') || null],
+        ["total_flights", parseInt(totalFlights as string) || 0],
+        ["total_flight_hours", parseFloat(totalFlightHours as string) || 0],
+      ];
+      for (const [key, newVal] of fields) {
+        // Normalize dates to string YYYY-MM-DD for comparison if present
+        const oldVal = before[key as keyof typeof before];
+        const normOld = oldVal instanceof Date ? oldVal.toISOString().slice(0, 10) : oldVal;
+        const normNew = typeof newVal === "string" && /\d{4}-\d{2}-\d{2}/.test(newVal)
+          ? newVal
+          : newVal;
+        if (normOld !== normNew) {
+          changes[key as string] = { old: oldVal, new: newVal };
+        }
+      }
+    }
+
+    // Insert audit log if any changes
+    if (Object.keys(changes).length > 0) {
+      const actor = await getMemberById(userId);
+      await query(
+        `INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)`,
+        [
+          targetUserId,
+          userId,
+          actor?.name || "Unknown",
+          "member_update",
+          JSON.stringify(changes),
+        ]
+      );
+    }
 
     return { success: "Member details updated successfully!" };
   }
@@ -136,6 +211,14 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (insuranceId && insuranceId !== "new") {
       // Update existing policy
+      // Load before snapshot
+      const beforeRows = await query(
+        `SELECT policy_number, policy_type, coverage_amount, premium_amount, start_date, end_date, status 
+         FROM insurance_policies WHERE id = ?`,
+        [insuranceId]
+      );
+      const before = beforeRows[0] || null;
+
       await query(
         `UPDATE insurance_policies 
          SET policy_number = ?, policy_type = ?, coverage_amount = ?, 
@@ -152,6 +235,35 @@ export async function action({ request }: Route.ActionArgs) {
           insuranceId
         ]
       );
+
+      // Compute diffs and audit
+      if (before) {
+        const changes: Record<string, { old: any; new: any }> = {};
+        const fields: Array<[string, any]> = [
+          ["policy_number", policyNumber],
+          ["policy_type", policyType],
+          ["coverage_amount", parseFloat(coverageAmount as string) || 0],
+          ["premium_amount", parseFloat(premiumAmount as string) || 0],
+          ["start_date", startDate],
+          ["end_date", endDate],
+          ["status", status],
+        ];
+        for (const [key, newVal] of fields) {
+          const oldVal = (before as any)[key];
+          const normOld = oldVal instanceof Date ? oldVal.toISOString().slice(0,10) : oldVal;
+          const normNew = typeof newVal === "string" && /\d{4}-\d{2}-\d{2}/.test(newVal as string) ? newVal : newVal;
+          if (normOld !== normNew) {
+            changes[key] = { old: oldVal, new: newVal };
+          }
+        }
+        if (Object.keys(changes).length > 0) {
+          const actor = await getMemberById(userId);
+          await query(
+            `INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)`,
+            [targetUserId, userId, actor?.name || "Unknown", "insurance_update", JSON.stringify(changes)]
+          );
+        }
+      }
     } else if (policyNumber) {
       // Create new policy
       await query(
@@ -169,6 +281,22 @@ export async function action({ request }: Route.ActionArgs) {
           status
         ]
       );
+
+      // Audit creation
+      const actor = await getMemberById(userId);
+      const changes = {
+        policy_number: { old: null, new: policyNumber },
+        policy_type: { old: null, new: policyType },
+        coverage_amount: { old: null, new: parseFloat(coverageAmount as string) || 0 },
+        premium_amount: { old: null, new: parseFloat(premiumAmount as string) || 0 },
+        start_date: { old: null, new: startDate },
+        end_date: { old: null, new: endDate },
+        status: { old: null, new: status },
+      };
+      await query(
+        `INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)`,
+        [targetUserId, userId, actor?.name || "Unknown", "insurance_create", JSON.stringify(changes)]
+      );
     }
 
     return { success: "Insurance policy updated successfully!" };
@@ -185,8 +313,19 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function ManageUsers({ loaderData }: Route.ComponentProps) {
-  const { member, searchResults, selectedUser, userInsurance, searchQuery } = loaderData;
+  const { member, searchResults, selectedUser, userInsurance, auditLogs, searchQuery } = loaderData;
   const actionData = useActionData<typeof action>();
+
+  // Helper to render one or more rating labels
+  const renderRatingLabels = (value: string | null) => {
+    if (!value) return 'N/A';
+    const values = String(value)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (values.length === 0) return 'N/A';
+    return values.map((v) => getRatingLabel(v)).join(', ');
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -246,9 +385,12 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                             {user.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                          {user.membership_id && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Membership ID: {user.membership_id}</p>
+                          )}
                           <div className="flex gap-4 mt-2">
                             <span className="text-xs px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200">
-                              {getRatingLabel(user.pilot_rating)}
+                              {renderRatingLabels(user.pilot_rating)}
                             </span>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                               user.membership_status === 'active' 
@@ -266,6 +408,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                     </a>
                   ))}
                 </div>
+
               </div>
             )}
 
@@ -318,6 +461,20 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           required
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Membership ID
+                        </label>
+                        <input
+                          type="text"
+                          name="membershipId"
+                          defaultValue={selectedUser.membership_id || ''}
+                          placeholder="e.g., PAI-MEM-12345"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Changing this will affect public verification.</p>
                       </div>
 
                       <div>
@@ -397,13 +554,14 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Pilot Rating <span className="text-red-500">*</span>
+                          Pilot Ratings <span className="text-red-500">*</span>
                         </label>
                         <select
                           name="pilotRating"
-                          defaultValue={selectedUser.pilot_rating}
+                          multiple
+                          defaultValue={(selectedUser.pilot_rating ? String(selectedUser.pilot_rating).split(',').map((v: string) => v.trim()).filter(Boolean) : []) as any}
                           required
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white min-h-[140px]"
                         >
                           {PILOT_RATINGS.map((rating) => (
                             <option key={rating.value} value={rating.value}>
@@ -412,6 +570,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           ))}
                           <option value="Instructor">Instructor</option>
                         </select>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Hold Cmd/Ctrl to select multiple.</p>
                       </div>
 
                       <div>
@@ -629,6 +788,48 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                     </button>
                   </Form>
                 </div>
+
+                {/* Recent Changes for this user */}
+                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    Recent Changes
+                  </h2>
+                  {auditLogs && auditLogs.length > 0 ? (
+                    <div className="space-y-4">
+                      {auditLogs.map((log: any) => {
+                        const parsed = typeof log.changes === 'string'
+                          ? (() => { try { return JSON.parse(log.changes); } catch { return {}; } })()
+                          : (log.changes || {});
+                        const entries = Object.entries(parsed) as Array<[string, any]>;
+                        return (
+                          <div key={log.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">{log.actor_name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">Action: {log.action}</div>
+                            {entries.length > 0 ? (
+                              <ul className="text-sm text-gray-700 dark:text-gray-300 list-disc pl-5 space-y-1">
+                                {entries.map(([field, diff]) => (
+                                  <li key={field}>
+                                    <span className="font-medium">{field}</span>: {String((diff as any).old ?? '—')} → {String((diff as any).new ?? '—')}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="text-sm text-gray-600 dark:text-gray-400">No details available.</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400">No recent changes recorded.</p>
+                  )}
+                </div>
+
               </div>
             )}
 
