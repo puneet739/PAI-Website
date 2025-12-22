@@ -29,7 +29,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Search for users if query provided
   if (searchQuery) {
     searchResults = await query(
-      `SELECT id, name, email, phone, membership_type, membership_status, 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
               address, blood_group, gender, date_of_birth, created_at 
        FROM members 
@@ -43,7 +43,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Load selected user details
   if (userId_param) {
     const users = await query(
-      `SELECT id, name, email, phone, membership_type, membership_status, 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
               active_until, pilot_rating, total_flights, total_flight_hours, 
               address, blood_group, gender, date_of_birth, created_at 
        FROM members 
@@ -99,13 +99,15 @@ export async function action({ request }: Route.ActionArgs) {
     const membershipType = formData.get("membershipType");
     const membershipStatus = formData.get("membershipStatus");
     const activeUntil = formData.get("activeUntil");
-    const pilotRating = formData.get("pilotRating");
+    const membershipId = formData.get("membershipId");
+    // Support multiple pilot ratings
+    const pilotRatings = formData.getAll("pilotRating");
     const totalFlights = formData.get("totalFlights");
     const totalFlightHours = formData.get("totalFlightHours");
 
     // Load existing member to compute changes
     const existingMembers = await query(
-      `SELECT id, name, email, phone, address, blood_group, gender, date_of_birth, created_at, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours 
+      `SELECT id, membership_id, name, email, phone, address, blood_group, gender, date_of_birth, created_at, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours 
        FROM members WHERE id = ?`,
       [targetUserId]
     );
@@ -131,17 +133,26 @@ export async function action({ request }: Route.ActionArgs) {
         membershipType,
         membershipStatus,
         activeUntil || null,
-        pilotRating,
+        (pilotRatings as string[]).join(',') || null,
         parseInt(totalFlights as string) || 0,
         parseFloat(totalFlightHours as string) || 0,
         targetUserId
       ]
     );
 
+    // Update membership_id separately if provided (kept separate to avoid breaking positional params)
+    if (typeof membershipId === 'string') {
+      await query(
+        `UPDATE members SET membership_id = ? WHERE id = ?`,
+        [membershipId || null, targetUserId]
+      );
+    }
+
     // Compute change set
     const changes: Record<string, { old: any; new: any }> = {};
     if (before) {
       const fields = [
+        ["membership_id", membershipId || null],
         ["name", name],
         ["email", email],
         ["phone", phone || null],
@@ -153,7 +164,7 @@ export async function action({ request }: Route.ActionArgs) {
         ["membership_type", membershipType],
         ["membership_status", membershipStatus],
         ["active_until", activeUntil || null],
-        ["pilot_rating", pilotRating],
+        ["pilot_rating", (pilotRatings as string[]).join(',') || null],
         ["total_flights", parseInt(totalFlights as string) || 0],
         ["total_flight_hours", parseFloat(totalFlightHours as string) || 0],
       ];
@@ -305,6 +316,17 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
   const { member, searchResults, selectedUser, userInsurance, auditLogs, searchQuery } = loaderData;
   const actionData = useActionData<typeof action>();
 
+  // Helper to render one or more rating labels
+  const renderRatingLabels = (value: string | null) => {
+    if (!value) return 'N/A';
+    const values = String(value)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (values.length === 0) return 'N/A';
+    return values.map((v) => getRatingLabel(v)).join(', ');
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar currentPath="/manage-users" userRole={member.role_name} />
@@ -363,9 +385,12 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                             {user.name}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                          {user.membership_id && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Membership ID: {user.membership_id}</p>
+                          )}
                           <div className="flex gap-4 mt-2">
                             <span className="text-xs px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200">
-                              {getRatingLabel(user.pilot_rating)}
+                              {renderRatingLabels(user.pilot_rating)}
                             </span>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                               user.membership_status === 'active' 
@@ -436,6 +461,20 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           required
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Membership ID
+                        </label>
+                        <input
+                          type="text"
+                          name="membershipId"
+                          defaultValue={selectedUser.membership_id || ''}
+                          placeholder="e.g., PAI-MEM-12345"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Changing this will affect public verification.</p>
                       </div>
 
                       <div>
@@ -515,13 +554,14 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Pilot Rating <span className="text-red-500">*</span>
+                          Pilot Ratings <span className="text-red-500">*</span>
                         </label>
                         <select
                           name="pilotRating"
-                          defaultValue={selectedUser.pilot_rating}
+                          multiple
+                          defaultValue={(selectedUser.pilot_rating ? String(selectedUser.pilot_rating).split(',').map((v: string) => v.trim()).filter(Boolean) : []) as any}
                           required
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white min-h-[140px]"
                         >
                           {PILOT_RATINGS.map((rating) => (
                             <option key={rating.value} value={rating.value}>
@@ -530,6 +570,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           ))}
                           <option value="Instructor">Instructor</option>
                         </select>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Hold Cmd/Ctrl to select multiple.</p>
                       </div>
 
                       <div>
