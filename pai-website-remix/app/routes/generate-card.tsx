@@ -145,8 +145,8 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
           {/* Member Card */}
           <div className="flex justify-center">
             <div className="w-full max-w-[900px]">
-              <div ref={cardRef} className="mx-auto" style={{ width: '820px' }}>
-                <div className="bg-white rounded-2xl shadow-lg overflow-hidden relative" style={{ height: '460px' }}>
+              <div ref={cardRef} className="mx-auto w-full sm:w-[820px]">
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden relative h-auto sm:h-[460px]">
                   {/* Background Image */}
                   <div 
                     className="absolute top-0 left-0 w-full h-full opacity-15 pointer-events-none"
@@ -159,16 +159,16 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
                   />
 
                   {/* Card Header */}
-                  <div className="relative text-white py-3 px-7 z-10" style={{ background: 'linear-gradient(to right, #0ea5e9, #2563eb)' }}>
-                    <h2 className="text-2xl font-bold text-center">PAI Membership/Pilot Card</h2>
+                  <div className="relative text-white py-3 px-4 sm:px-7 z-10" style={{ background: 'linear-gradient(to right, #0ea5e9, #2563eb)' }}>
+                    <h2 className="text-xl sm:text-2xl font-bold text-center">PAI Membership/Pilot Card</h2>
                   </div>
 
                   {/* Card Content */}
-                  <div className="relative flex flex-row p-7 z-10" style={{ height: 'calc(100% - 60px)' }}>
+                  <div className="relative flex flex-col sm:flex-row p-4 sm:p-7 z-10 min-h-[400px] sm:h-[calc(100%-60px)]">
                     {/* Left Section - 55% */}
-                    <div className="w-[55%] pr-4">
+                    <div className="w-full sm:w-[55%] sm:pr-4 mb-4 sm:mb-0">
                       {/* Profile Picture */}
-                      <div className="w-[100px] h-[100px] rounded-lg overflow-hidden">
+                      <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-lg overflow-hidden">
                         {member.profile_image ? (
                           <img 
                             src={member.profile_image} 
@@ -176,58 +176,58 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 text-white text-3xl font-bold">
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-600 text-white text-2xl sm:text-3xl font-bold">
                             {member.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
 
                       {/* Name */}
-                      <div className="text-[24px] font-bold mt-2">
+                      <div className="text-lg sm:text-[24px] font-bold mt-2 text-gray-900">
                         {member.name}
                       </div>
 
                       {/* Membership ID */}
                       <div className="mt-3">
                         <span className="text-xs text-gray-600">PAI Membership ID</span>
-                        <span className="block text-[22px] font-bold mt-0.5">
+                        <span className="block text-lg sm:text-[22px] font-bold mt-0.5 text-gray-900">
                           {member.membership_id || `PAI-MEM-${String(member.id).padStart(5, '0')}`}
                         </span>
                       </div>
 
                       {/* Membership Details */}
-                      <div className="mt-4 text-sm leading-[20px]">
-                        <strong>Membership Details</strong><br />
-                        Member Since: {formatDate(member.created_at)}<br />
-                        Valid Until: {formatDate(member.active_until)}<br />
+                      <div className="mt-4 text-xs sm:text-sm leading-[20px] text-gray-900">
+                        <strong className="text-gray-900">Membership Details</strong><br />
+                        <span className="text-gray-800">Member Since: {formatDate(member.created_at)}</span><br />
+                        <span className="text-gray-800">Valid Until: {formatDate(member.active_until)}</span><br />
                         {insurancePolicy && (
                           <>
-                            Insurance Amount: ₹{(insurancePolicy.coverage_amount / 100000).toFixed(0)},00,000<br />
-                            Insurance Number: {insurancePolicy.policy_number}<br />
+                            <span className="text-gray-800">Insurance Amount: ₹{(insurancePolicy.coverage_amount / 100000).toFixed(0)},00,000</span><br />
+                            <span className="text-gray-800">Insurance Number: {insurancePolicy.policy_number}</span><br />
                           </>
                         )}
-                        Rating: {getRatingLabel(member.pilot_rating)}
+                        <span className="text-gray-800">Rating: {getRatingLabel(member.pilot_rating)}</span>
                       </div>
                     </div>
 
                     {/* Right Section - 45% */}
-                    <div className="w-[45%] text-center">
+                    <div className="w-full sm:w-[45%] text-center">
                       {/* QR Code */}
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrCodeData)}`}
                         alt="QR Code"
-                        className="w-[160px] h-[160px] mx-auto mt-3 mb-2"
+                        className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] mx-auto mt-3 mb-2"
                       />
-                      <div className="text-sm font-medium">Scan for Verification</div>
+                      <div className="text-xs sm:text-sm font-medium text-gray-900">Scan for Verification</div>
 
                       {/* Personal Details */}
-                      <div className="mt-4 text-sm leading-[20px] text-left pl-16">
-                        <strong>Blood Group:</strong> {member.blood_group || 'N/A'}<br />
-                        <strong>Gender:</strong> {member.gender || 'N/A'}<br />
-                        <strong>Date of Birth:</strong> {formatDateShort(member.date_of_birth)}<br />
-                        <strong>Address:</strong> {member.address ? (
-                          <span className="block mt-0.5">{member.address}</span>
-                        ) : 'Not provided'}
+                      <div className="mt-4 text-xs sm:text-sm leading-[20px] text-left pl-4 sm:pl-16 text-gray-900">
+                        <strong className="text-gray-900">Blood Group:</strong> <span className="text-gray-800">{member.blood_group || 'N/A'}</span><br />
+                        <strong className="text-gray-900">Gender:</strong> <span className="text-gray-800">{member.gender || 'N/A'}</span><br />
+                        <strong className="text-gray-900">Date of Birth:</strong> <span className="text-gray-800">{formatDateShort(member.date_of_birth)}</span><br />
+                        <strong className="text-gray-900">Address:</strong> {member.address ? (
+                          <span className="block mt-0.5 text-gray-800">{member.address}</span>
+                        ) : <span className="text-gray-800">Not provided</span>}
                       </div>
                     </div>
                   </div>

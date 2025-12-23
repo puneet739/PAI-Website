@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   changes JSON NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
-  FOREIGN KEY (actor_id) REFERENCES members(id) ON DELETE SET NULL,
+  FOREIGN KEY (actor_id) REFERENCES members(id) ON DELETE CASCADE,
   INDEX idx_member_id (member_id),
   INDEX idx_actor_id (actor_id),
   INDEX idx_created_at (created_at)
