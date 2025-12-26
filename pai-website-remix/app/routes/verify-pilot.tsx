@@ -222,7 +222,7 @@ export default function VerifyPilot() {
                       {/* Pilot Details */}
                       <div className="flex-1 space-y-4">
                         <div>
-                          <h2 className="text-3xl font-bold text-gray-900 mb-2">{maskPilotName(pilot.name, pilot.id)}</h2>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-2">{pilot.name}</h2>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-600">Membership ID:</span>
                             <span className="text-lg font-bold text-sky-600">
