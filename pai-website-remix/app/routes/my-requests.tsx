@@ -231,7 +231,7 @@ export default function MyRequests({ loaderData }: Route.ComponentProps) {
                     )}
                     {req.status === "rejected" && (
                       <div className="mt-4 text-sm text-red-700 dark:text-red-300">
-                        ✗ Your request was not approved. Please check admin notes for details.
+                        ✗ Your request was not approved. Please check email communication from support team. You can raise the request again after discussing with team. 
                       </div>
                     )}
                   </div>
