@@ -14,9 +14,11 @@ import { Footer } from "./components/Footer";
 export const links: Route.LinksFunction = () => [];
 
 export async function loader() {
-  // Log configuration at startup (server-side only)
-  //const { logConfig } = await import("./lib/config.server");
-  //logConfig();
+  // Initialize workflows on server startup
+  if (typeof window === 'undefined') {
+    const { initializeWorkflows } = await import("./lib/workflow.server");
+    await initializeWorkflows();
+  }
   return null;
 }
 
