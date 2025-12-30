@@ -50,25 +50,32 @@ export default function Tests({ loaderData }: Route.ComponentProps) {
     },
     {
       level: 'P2',
+      name: 'Beginner Pilot',
+      description: 'Basic paragliding knowledge and safety',
+      color: 'from-green-500 to-emerald-500',
+      icon: '🪂',
+    },
+    {
+      level: 'P3',
       name: 'Novice Pilot',
       description: 'Intermediate flying techniques and theory',
       color: 'from-blue-500 to-cyan-500',
       icon: '🌤️',
     },
     {
-      level: 'P3',
+      level: 'P4',
       name: 'Intermediate Pilot',
       description: 'Advanced maneuvers and weather understanding',
       color: 'from-orange-500 to-amber-500',
       icon: '⛰️',
     },
     {
-      level: 'P4',
+      level: 'P5',
       name: 'Advanced Pilot',
       description: 'Expert level XC flying and competition knowledge',
       color: 'from-purple-500 to-pink-500',
       icon: '🏆',
-    },
+    } 
   ];
 
   const formatDate = (dateString: string) => {
