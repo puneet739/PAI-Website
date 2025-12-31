@@ -4,6 +4,7 @@ import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { TEST_LEVELS } from "~/lib/constants";
 
 interface TestResult {
   test_level: string;
@@ -40,44 +41,6 @@ export function meta({}: Route.MetaArgs) {
 export default function Tests({ loaderData }: Route.ComponentProps) {
   const { member, testResults } = loaderData;
 
-  const testLevels = [
-    {
-      level: 'P1',
-      name: 'Beginner Pilot',
-      description: 'Basic paragliding knowledge and safety',
-      color: 'from-green-500 to-emerald-500',
-      icon: '🪂',
-    },
-    {
-      level: 'P2',
-      name: 'Beginner Pilot',
-      description: 'Basic paragliding knowledge and safety',
-      color: 'from-green-500 to-emerald-500',
-      icon: '🪂',
-    },
-    {
-      level: 'P3',
-      name: 'Novice Pilot',
-      description: 'Intermediate flying techniques and theory',
-      color: 'from-blue-500 to-cyan-500',
-      icon: '🌤️',
-    },
-    {
-      level: 'P4',
-      name: 'Intermediate Pilot',
-      description: 'Advanced maneuvers and weather understanding',
-      color: 'from-orange-500 to-amber-500',
-      icon: '⛰️',
-    },
-    {
-      level: 'P5',
-      name: 'Advanced Pilot',
-      description: 'Expert level XC flying and competition knowledge',
-      color: 'from-purple-500 to-pink-500',
-      icon: '🏆',
-    } 
-  ];
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -112,7 +75,7 @@ export default function Tests({ loaderData }: Route.ComponentProps) {
 
           {/* Test Levels Grid */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            {testLevels.map((test) => (
+            {TEST_LEVELS.map((test) => (
               <a
                 key={test.level}
                 href={`/tests/${test.level.toLowerCase()}`}

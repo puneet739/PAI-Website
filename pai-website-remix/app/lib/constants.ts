@@ -52,3 +52,68 @@ export function getRatingDescription(value: string | null | undefined): string {
   const rating = PILOT_RATINGS.find(r => r.value === value);
   return rating ? rating.description : '';
 }
+
+// Test Level Constants
+export interface TestLevel {
+  level: string;
+  name: string;
+  description: string;
+  color: string;
+  icon: string;
+}
+
+export const TEST_LEVELS: TestLevel[] = [
+  {
+    level: 'P1',
+    name: 'Beginner Pilot',
+    description: 'Basic paragliding knowledge and safety',
+    color: 'from-green-500 to-emerald-500',
+    icon: '🪂',
+  },
+  {
+    level: 'P2',
+    name: 'Student Pilot',
+    description: 'Student flying techniques and theory',
+    color: 'from-green-500 to-emerald-500',
+    icon: '🪂',
+  },
+  {
+    level: 'P3',
+    name: 'Novice Pilot',
+    description: 'Intermediate flying techniques and theory',
+    color: 'from-blue-500 to-cyan-500',
+    icon: '🌤️',
+  },
+  {
+    level: 'P4',
+    name: 'Intermediate Pilot',
+    description: 'Advanced maneuvers and weather understanding',
+    color: 'from-orange-500 to-amber-500',
+    icon: '⛰️',
+  },
+  {
+    level: 'P5',
+    name: 'Advanced Pilot',
+    description: 'Expert level XC flying and competition knowledge',
+    color: 'from-purple-500 to-pink-500',
+    icon: '🏆',
+  },
+];
+
+/**
+ * Get array of valid test level codes
+ * @returns Array of test level codes (e.g., ['P1', 'P2', 'P3', 'P4', 'P5'])
+ */
+export function getValidTestLevels(): string[] {
+  return TEST_LEVELS.map(level => level.level);
+}
+
+/**
+ * Check if a test level is valid
+ * @param level - Test level to check
+ * @returns True if the level is valid
+ */
+export function isValidTestLevel(level: string | null | undefined): boolean {
+  if (!level) return false;
+  return TEST_LEVELS.some(testLevel => testLevel.level === level.toUpperCase());
+}

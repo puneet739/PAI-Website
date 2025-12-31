@@ -5,6 +5,7 @@ import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState, useEffect } from "react";
+import { isValidTestLevel, getValidTestLevels } from "~/lib/constants";
 
 interface Question {
   id: number;
@@ -25,7 +26,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const level = params.level?.toUpperCase();
-  if (!level || !['P1', 'P2', 'P3', 'P4', 'P5'].includes(level)) {
+  if (!level || !isValidTestLevel(level)) {
     throw redirect("/tests");
   }
 
@@ -43,7 +44,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const formData = await request.formData();
   const level = params.level?.toUpperCase();
 
-  if (!level || !['P1', 'P2', 'P3', 'P4', 'P5'].includes(level)) {
+  if (!level || !isValidTestLevel(level)) {
     return { error: "Invalid test level" };
   }
 
