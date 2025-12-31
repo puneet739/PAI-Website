@@ -25,7 +25,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const level = params.level?.toUpperCase();
-  if (!level || !['P1', 'P2', 'P3', 'P4'].includes(level)) {
+  if (!level || !['P1', 'P2', 'P3', 'P4', 'P5'].includes(level)) {
     throw redirect("/tests");
   }
 
@@ -43,7 +43,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const formData = await request.formData();
   const level = params.level?.toUpperCase();
 
-  if (!level || !['P1', 'P2', 'P3', 'P4'].includes(level)) {
+  if (!level || !['P1', 'P2', 'P3', 'P4', 'P5'].includes(level)) {
     return { error: "Invalid test level" };
   }
 
