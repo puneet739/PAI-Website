@@ -14,7 +14,7 @@ export async function initializeWorkflows() {
   }
 
   if (!WORKFLOW_ENABLED) {
-    console.log("⚠️  Workflows disabled (WORKFLOW_ENABLED=false)");
+    //console.log("⚠️  Workflows disabled (WORKFLOW_ENABLED=false)");
     return;
   }
 
