@@ -568,7 +568,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                               {rating.label}
                             </option>
                           ))}
-                          <option value="Instructor">Instructor</option>
+                          
                         </select>
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Hold Cmd/Ctrl to select multiple.</p>
                       </div>
