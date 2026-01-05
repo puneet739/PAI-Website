@@ -279,23 +279,27 @@ export default function VerifyPilot() {
                           )}
 
                           {/* Insurance */}
-                          {pilot.insurance_amount && (
-                            <div className="bg-sky-50 rounded-lg p-4">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Insurance Status</p>
-                              <p className="text-lg font-bold text-gray-900">
-                                {isDateValid(pilot.insurance_valid_until) ? (
-                                  <span className="text-green-600">Valid</span>
-                                ) : (
-                                  <span className="text-red-600">Expired</span>
-                                )}
-                              </p>
-                              {pilot.insurance_policy_number && (
-                                <p className="text-xs text-gray-600 mt-1">
-                                  Policy: {maskPolicyNumber(pilot.insurance_policy_number)}
+                          <div className="bg-sky-50 rounded-lg p-4">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Insurance Status</p>
+                            {pilot.insurance_amount ? (
+                              <>
+                                <p className="text-lg font-bold text-gray-900">
+                                  {isDateValid(pilot.insurance_valid_until) ? (
+                                    <span className="text-green-600">Valid</span>
+                                  ) : (
+                                    <span className="text-red-600">Expired</span>
+                                  )}
                                 </p>
-                              )}
-                            </div>
-                          )}
+                                {pilot.insurance_policy_number && (
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Policy: {maskPolicyNumber(pilot.insurance_policy_number)}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-lg font-bold text-gray-600">Not insured</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
