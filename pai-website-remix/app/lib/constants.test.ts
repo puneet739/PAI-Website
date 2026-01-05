@@ -4,7 +4,7 @@ import { PILOT_RATINGS, getRatingLabel, getRatingDescription } from './constants
 describe('Constants', () => {
   describe('PILOT_RATINGS', () => {
     it('should contain all pilot ratings', () => {
-      expect(PILOT_RATINGS).toHaveLength(17);
+      expect(PILOT_RATINGS).toHaveLength(19);
       expect(PILOT_RATINGS[0].value).toBe('P1');
       expect(PILOT_RATINGS[9].value).toBe('P10');
       expect(PILOT_RATINGS[16].value).toBe('PPG7');

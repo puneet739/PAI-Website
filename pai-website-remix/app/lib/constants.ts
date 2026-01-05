@@ -25,7 +25,8 @@ export const PILOT_RATINGS: PilotRating[] = [
   { value: 'PPG6', label: 'PPG6 -  Instructor', description: 'PPG6  Instructor' },
   { value: 'PPG7', label: 'PPG7 - Examiner', description: 'PPG7 Examiner' },
   
-
+  { value: 'SCHOOL', label: 'PAI Member School', description: 'PAI Member School' },
+  { value: 'CLUB', label: 'PAI Member Club', description: 'PAI Member Club' },
 ];
 
 /**
