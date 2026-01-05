@@ -31,6 +31,7 @@ describe('Insurance Request - Async Email Sending', () => {
       name: 'Test User',
       email: 'test@example.com',
       phone: '+919876543210',
+      date_of_birth: '1990-01-01',
       membership_type: 'regular',
     });
   });
@@ -60,6 +61,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'premium');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Need comprehensive coverage');
 
       const request = new Request('http://localhost/insurance', {
@@ -101,6 +103,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Basic coverage needed');
 
       const request = new Request('http://localhost/insurance', {
@@ -132,6 +135,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'comprehensive');
       formData.append('phone', '+919876543210');
       formData.append('email', 'john@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'International coverage');
 
       const request = new Request('http://localhost/insurance', {
@@ -150,6 +154,8 @@ describe('Insurance Request - Async Email Sending', () => {
       expect(emailParams.userName).toBe('Test User');
       expect(emailParams.userEmail).toBe('john@example.com');
       expect(emailParams.phone).toBe('+919876543210');
+      expect(emailParams.dateOfBirth).toBeDefined();
+      expect(emailParams.nominee).toBe('Jane Doe (Spouse)');
       expect(emailParams.insurancePlan).toBe('Comprehensive');
       expect(emailParams.coverage).toBe('₹40 Lakh');
       expect(emailParams.premium).toBe('₹12,219');
@@ -169,6 +175,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'premium');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Test');
 
       const request = new Request('http://localhost/insurance', {
@@ -227,6 +234,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
 
       const request = new Request('http://localhost/insurance', {
         method: 'POST',
@@ -256,6 +264,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('nominee', 'Jane Doe (Spouse)');
 
       const request = new Request('http://localhost/insurance', {
         method: 'POST',

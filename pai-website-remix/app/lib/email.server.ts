@@ -80,6 +80,8 @@ interface InsuranceRequestEmail {
   userName: string;
   userEmail: string;
   phone: string;
+  dateOfBirth: string;
+  nominee: string;
   insurancePlan: string;
   coverage: string;
   premium: string;
@@ -216,7 +218,7 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
     return;
   }
 
-  const { userName, userEmail, phone, insurancePlan, coverage, premium, comments, requestId } = data;
+  const { userName, userEmail, phone, dateOfBirth, nominee, insurancePlan, coverage, premium, comments, requestId } = data;
 
   const userEmailContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -230,6 +232,8 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
         <p><strong>Name:</strong> ${userName}</p>
         <p><strong>Email:</strong> ${userEmail}</p>
         <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Date of Birth:</strong> ${dateOfBirth}</p>
+        <p><strong>Nominee:</strong> ${nominee}</p>
         <p><strong>Plan:</strong> ${insurancePlan}</p>
         <p><strong>Coverage:</strong> ${coverage}</p>
         <p><strong>Premium:</strong> ${premium}/year</p>
@@ -264,6 +268,8 @@ export async function sendInsuranceRequestEmail(data: InsuranceRequestEmail) {
         <p><strong>Name:</strong> ${userName}</p>
         <p><strong>Email:</strong> ${userEmail}</p>
         <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Date of Birth:</strong> ${dateOfBirth}</p>
+        <p><strong>Nominee:</strong> ${nominee}</p>
         <p><strong>Plan:</strong> ${insurancePlan}</p>
         <p><strong>Coverage:</strong> ${coverage}</p>
         <p><strong>Premium:</strong> ${premium}/year</p>

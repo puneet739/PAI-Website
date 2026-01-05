@@ -8,9 +8,6 @@ import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState } from "react";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // Temporarily disable edit profile functionality
-  throw redirect("/dashboard");
-  
   const userId = await requireUserId(request);
   const member = await getMemberById(userId);
 
@@ -25,19 +22,17 @@ export async function action({ request }: Route.ActionArgs) {
   const userId = await requireUserId(request);
   const formData = await request.formData();
 
-  const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
   const address = formData.get("address") as string;
   const bloodGroup = formData.get("bloodGroup") as string;
   const gender = formData.get("gender") as string;
-  const dateOfBirth = formData.get("dateOfBirth") as string;
 
   try {
     await query(
       `UPDATE members 
-       SET name = ?, phone = ?, address = ?, blood_group = ?, gender = ?, date_of_birth = ?
+       SET phone = ?, address = ?, blood_group = ?, gender = ?
        WHERE id = ?`,
-      [name, phone, address, bloodGroup, gender, dateOfBirth || null, userId]
+      [phone, address, bloodGroup, gender, userId]
     );
 
     return redirect("/dashboard?profile=updated");
@@ -106,11 +101,12 @@ export default function EditProfile({ loaderData, actionData }: Route.ComponentP
                     id="name"
                     name="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                    disabled
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Name cannot be changed. Contact support@pgaoi.org for assistance.
+                  </p>
                 </div>
 
                 {/* Phone */}
@@ -197,9 +193,12 @@ export default function EditProfile({ loaderData, actionData }: Route.ComponentP
                     id="dateOfBirth"
                     name="dateOfBirth"
                     value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                    disabled
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Date of birth cannot be changed. Contact support@pgaoi.org for assistance.
+                  </p>
                 </div>
 
                 {/* Action Buttons */}

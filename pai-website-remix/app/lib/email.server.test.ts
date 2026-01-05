@@ -69,6 +69,8 @@ describe('Email Server', () => {
         userName: 'Test User',
         userEmail: 'test@example.com',
         phone: '+919876543210',
+        dateOfBirth: '1 Jan 1990',
+        nominee: 'Jane Doe (Spouse)',
         insurancePlan: 'Premium',
         coverage: '₹50 Lakh',
         premium: '₹5,000',
