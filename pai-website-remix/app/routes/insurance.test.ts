@@ -294,6 +294,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
 
       const request = new Request('http://localhost/insurance', {
