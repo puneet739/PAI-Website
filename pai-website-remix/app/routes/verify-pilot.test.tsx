@@ -136,13 +136,14 @@ describe('VerifyPilot - DPDPA Compliance Tests', () => {
     });
 
     it('should return true for today', () => {
-      const isDateValid = (dateString: string | null) => {
+      const now = new Date();
+      const isDateValid = (dateString: string | null, referenceDate: Date) => {
         if (!dateString) return false;
-        return new Date(dateString) >= new Date();
+        return new Date(dateString) >= referenceDate;
       };
       
-      const today = new Date().toISOString();
-      const result = isDateValid(today);
+      const today = now.toISOString();
+      const result = isDateValid(today, now);
       expect(result).toBe(true);
     });
 
