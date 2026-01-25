@@ -50,6 +50,7 @@ export async function action({ request }: Route.ActionArgs) {
     const insurancePlan = formData.get("insurancePlan");
     const phone = formData.get("phone");
     const email = formData.get("email");
+    const dateOfBirth = formData.get("dateOfBirth");
     const nominee = formData.get("nominee");
     const comments = formData.get("comments");
     
@@ -63,6 +64,10 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (typeof email !== "string" || !email) {
       return { error: "Email is required" };
+    }
+
+    if (typeof dateOfBirth !== "string" || !dateOfBirth) {
+      return { error: "Date of Birth is required" };
     }
 
     if (typeof nominee !== "string" || !nominee) {
@@ -98,7 +103,7 @@ export async function action({ request }: Route.ActionArgs) {
     // Create insurance request
     const result = await query(
       "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, insurance_type, coverage_amount, status) VALUES (?, 'insurance', ?, ?, ?, ?, ?, ?, 'pending')",
-      [userId, member.name, email, phone, `Nominee: ${nominee}${comments ? ' | ' + comments : ''}`, insurancePlan, details.coverage]
+      [userId, member.name, email, phone, `DOB: ${dateOfBirth} | Nominee: ${nominee}${comments ? ' | ' + comments : ''}`, insurancePlan, details.coverage]
     );
 
     // Get the inserted request ID
@@ -111,7 +116,7 @@ export async function action({ request }: Route.ActionArgs) {
       userName: member.name,
       userEmail: email,
       phone,
-      dateOfBirth: member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not provided',
+      dateOfBirth: new Date(dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       nominee,
       insurancePlan: insurancePlan.charAt(0).toUpperCase() + insurancePlan.slice(1),
       coverage: `₹${(details.coverage / 100000).toFixed(0)} Lakh`,
@@ -349,6 +354,21 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                     id="email"
                     name="email"
                     defaultValue={member.email}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    defaultValue={member.date_of_birth ? new Date(member.date_of_birth).toISOString().split('T')[0] : ""}
                     required
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                   />

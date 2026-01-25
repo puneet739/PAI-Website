@@ -61,6 +61,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'premium');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Need comprehensive coverage');
 
@@ -103,6 +104,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Basic coverage needed');
 
@@ -135,6 +137,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'comprehensive');
       formData.append('phone', '+919876543210');
       formData.append('email', 'john@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'International coverage');
 
@@ -175,6 +178,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'premium');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
       formData.append('comments', 'Test');
 
@@ -223,6 +227,31 @@ describe('Insurance Request - Async Email Sending', () => {
       expect(mockSendInsuranceRequestEmail).not.toHaveBeenCalled();
     });
 
+    it('should validate required date of birth', async () => {
+      const { action } = await import('./insurance');
+      
+      const formData = new URLSearchParams();
+      formData.append('_action', 'request_insurance');
+      formData.append('insurancePlan', 'basic');
+      formData.append('phone', '+919876543210');
+      formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '');
+
+      const request = new Request('http://localhost/insurance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      const result = await action({ request, params: {}, context: {} } as any);
+
+      expect(result).toEqual({ error: 'Date of Birth is required' });
+      expect(mockQuery).not.toHaveBeenCalled();
+      expect(mockSendInsuranceRequestEmail).not.toHaveBeenCalled();
+    });
+
     it('should prevent duplicate pending requests', async () => {
       // Mock existing pending request
       mockQuery.mockResolvedValueOnce([{ id: 1 }]);
@@ -234,6 +263,7 @@ describe('Insurance Request - Async Email Sending', () => {
       formData.append('insurancePlan', 'basic');
       formData.append('phone', '+919876543210');
       formData.append('email', 'test@example.com');
+      formData.append('dateOfBirth', '1990-01-01');
       formData.append('nominee', 'Jane Doe (Spouse)');
 
       const request = new Request('http://localhost/insurance', {
