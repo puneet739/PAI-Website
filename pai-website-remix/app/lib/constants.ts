@@ -12,7 +12,7 @@ export const PILOT_RATINGS: PilotRating[] = [
   { value: 'P4', label: 'P4 - Intermediate Pilot', description: 'Advanced maneuvers' },
   { value: 'P5', label: 'P5 - Advanced Pilot', description: 'Expert level XC flying' },
   { value: 'P6', label: 'P6 - Sports Tandem Pilot', description: 'Sports Tandem Pilot' },
-  { value: 'P7', label: 'P7 - Commercial Tandem Pilot', description: 'Commercial Tandem Pilotlevel' },
+  { value: 'P7', label: 'P7 - Tandem Pilot', description: 'Tandem Pilotlevel' },
   { value: 'P8', label: 'P8 - Assistant Instructor', description: 'Assistant Instructor' },
   { value: 'P9', label: 'P9 - Instructor', description: 'Instructor' },
   { value: 'P10', label: 'P10 - Examiner', description: 'Examiner' },
@@ -21,7 +21,7 @@ export const PILOT_RATINGS: PilotRating[] = [
   { value: 'PPG2', label: 'PPG2 - Intermediate', description: 'PPG2 Intermediate' },
   { value: 'PPG3', label: 'PPG3 - Advanced', description: 'PPG3 Advanced' },
   { value: 'PPG4', label: 'PPG4 - Sports Tandem', description: 'PPG4 Sports Tandem' },
-  { value: 'PPG5', label: 'PPG5 - Commercial Tandem', description: 'PPG5 Commercial Tandem' },
+  { value: 'PPG5', label: 'PPG5 - Tandem', description: 'PPG5 Tandem' },
   { value: 'PPG6', label: 'PPG6 -  Instructor', description: 'PPG6  Instructor' },
   { value: 'PPG7', label: 'PPG7 - Examiner', description: 'PPG7 Examiner' },
   
