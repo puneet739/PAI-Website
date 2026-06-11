@@ -13,10 +13,12 @@ function getDatabaseConfig() {
         port: parseInt(url.port || '3306'),
         user: url.username,
         password: url.password,
-        database: url.pathname.slice(1), // Remove leading slash
+        database: url.pathname.slice(1),
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
       };
     } catch (error) {
       console.error('Failed to parse DATABASE_URL:', error);
@@ -34,6 +36,8 @@ function getDatabaseConfig() {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
   };
 }
 
@@ -52,12 +56,26 @@ export function getPool() {
 
 // Execute a query
 export async function query<T = any>(sql: string, params?: any[]): Promise<T[]> {
-  const connection = await getPool().getConnection();
+  const pool = getPool();
+  const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute(sql, params);
     return rows as T[];
+  } catch (err: any) {
+    // Stale pooled connection — destroy it and retry once with a fresh one
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET' || err.code === 'EPIPE') {
+      connection.destroy();
+      const fresh = await pool.getConnection();
+      try {
+        const [rows] = await fresh.execute(sql, params);
+        return rows as T[];
+      } finally {
+        fresh.release();
+      }
+    }
+    throw err;
   } finally {
-    connection.release();
+    try { connection.release(); } catch { /* already destroyed */ }
   }
 }
 

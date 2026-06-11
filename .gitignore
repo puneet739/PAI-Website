@@ -16,3 +16,7 @@ states/
 node_modules
 
 *.csv
+
+# Local reference docs — not for commit
+plans/
+notes/

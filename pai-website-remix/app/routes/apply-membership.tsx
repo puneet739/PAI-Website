@@ -100,7 +100,7 @@ export default function ApplyMembership({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar currentPath="/dashboard" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/dashboard" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       <div className="flex-1">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">

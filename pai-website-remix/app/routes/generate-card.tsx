@@ -59,6 +59,7 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: "Asia/Kolkata",
     });
   };
 
@@ -113,7 +114,7 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar currentPath="/generate-card" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/generate-card" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       <div className="flex-1 lg:ml-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
@@ -206,7 +207,10 @@ export default function GenerateCard({ loaderData }: Route.ComponentProps) {
                             <span className="text-gray-800">Insurance Number: {insurancePolicy.policy_number}</span><br />
                           </>
                         )}
-                        <span className="text-gray-800">Rating: {getRatingLabel(member.pilot_rating)}</span>
+                        <span className="text-gray-800">Rating: {getRatingLabel(member.pilot_rating)}</span><br />
+                        {member.is_life_member === 1 && (
+                          <span className="text-gray-800 font-semibold">Life Member #{member.life_membership_number}</span>
+                        )}
                       </div>
                     </div>
 

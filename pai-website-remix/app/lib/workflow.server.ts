@@ -27,27 +27,34 @@ export async function initializeWorkflows() {
 
     // Dynamic import to avoid loading workflow code in client bundle
     const { notifyPendingRequests } = await import("../../workflows/pending-requests-notifier");
+    const { sendRenewalReminders } = await import("../../workflows/renewal-reminders");
 
     // Schedule the pending requests notification workflow
     scheduledTask = cron.schedule(WORKFLOW_CRON_SCHEDULE, async () => {
       console.log("\n" + "=".repeat(60));
-      console.log("🔔 Workflow Triggered: Pending Requests Notification");
+      console.log("🔔 Workflow Triggered: Daily Scheduled Jobs");
       console.log("=".repeat(60));
-      
+
       try {
         await notifyPendingRequests();
         console.log("=".repeat(60));
-        console.log("✅ Workflow completed successfully");
+        console.log("✅ Pending requests notification complete");
+        console.log("=".repeat(60));
+      } catch (error) {
+        console.error("❌ Pending requests notification failed:", error);
+      }
+
+      try {
+        await sendRenewalReminders();
+        console.log("=".repeat(60));
+        console.log("✅ Renewal reminders complete");
         console.log("=".repeat(60) + "\n");
       } catch (error) {
-        console.error("=".repeat(60));
-        console.error("❌ Workflow failed with error:");
-        console.error(error);
-        console.error("=".repeat(60) + "\n");
+        console.error("❌ Renewal reminders failed:", error);
       }
     }, {
       scheduled: true,
-      timezone: "Asia/Kolkata" // Indian timezone
+      timezone: "Asia/Kolkata" // Indian timezone (5 PM IST = 11:30 UTC)
     });
 
     workflowInitialized = true;

@@ -29,10 +29,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Search for users if query provided
   if (searchQuery) {
     searchResults = await query(
-      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
-              active_until, pilot_rating, total_flights, total_flight_hours, 
-              address, blood_group, gender, date_of_birth, created_at 
-       FROM members 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status,
+              active_until, pilot_rating, total_flights, total_flight_hours,
+              address, blood_group, gender, date_of_birth, created_at,
+              is_life_member, life_membership_number
+       FROM members
        WHERE name LIKE ? OR email LIKE ?
        ORDER BY name
        LIMIT 20`,
@@ -43,10 +44,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Load selected user details
   if (userId_param) {
     const users = await query(
-      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
-              active_until, pilot_rating, total_flights, total_flight_hours, 
-              address, blood_group, gender, date_of_birth, created_at 
-       FROM members 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status,
+              active_until, pilot_rating, total_flights, total_flight_hours,
+              address, blood_group, gender, date_of_birth, created_at,
+              is_life_member, life_membership_number
+       FROM members
        WHERE id = ?`,
       [userId_param]
     );
@@ -302,6 +304,46 @@ export async function action({ request }: Route.ActionArgs) {
     return { success: "Insurance policy updated successfully!" };
   }
 
+  if (action === "revokeLifeMembership") {
+    const actor = await getMemberById(userId);
+
+    const beforeRows = await query<{ is_life_member: number; life_membership_number: number | null }>(
+      "SELECT is_life_member, life_membership_number FROM members WHERE id = ?",
+      [targetUserId]
+    );
+    const before = beforeRows[0];
+
+    if (!before || before.is_life_member !== 1) {
+      return { error: "This member does not have an active life membership." };
+    }
+
+    await query(
+      `UPDATE members
+       SET is_life_member = 0,
+           life_membership_number = NULL,
+           active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
+       WHERE id = ?`,
+      [targetUserId]
+    );
+
+    await query(
+      "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+      [
+        targetUserId,
+        userId,
+        actor?.name || "Unknown",
+        "revoke_life_membership",
+        JSON.stringify({
+          is_life_member: { old: 1, new: 0 },
+          life_membership_number: { old: before.life_membership_number, new: null },
+          active_until: { old: null, new: "1 year from today" },
+        }),
+      ]
+    );
+
+    return { success: "Life membership revoked. Member has been given 1 year active membership." };
+  }
+
   return { error: "Invalid action" };
 }
 
@@ -329,7 +371,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar currentPath="/manage-users" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/manage-users" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       <div className="flex-1 lg:ml-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
@@ -424,6 +466,37 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                 {actionData?.error && (
                   <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
                     <p className="text-sm text-red-800 dark:text-red-200">{actionData.error}</p>
+                  </div>
+                )}
+
+                {/* Life Member Banner + Revoke */}
+                {selectedUser.is_life_member === 1 && (
+                  <div className="bg-white dark:bg-gray-950 rounded-xl border border-purple-200 dark:border-purple-800 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                          PAI Life Member #{selectedUser.life_membership_number}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Lifetime membership — no expiry date
+                        </p>
+                      </div>
+                    </div>
+                    <Form method="post" onSubmit={(e) => { if (!confirm(`Revoke life membership for ${selectedUser.name}? They will receive 1 year of regular membership.`)) e.preventDefault(); }}>
+                      <input type="hidden" name="_action" value="revokeLifeMembership" />
+                      <input type="hidden" name="userId" value={selectedUser.id} />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition whitespace-nowrap"
+                      >
+                        Revoke Life Membership
+                      </button>
+                    </Form>
                   </div>
                 )}
 
@@ -583,9 +656,8 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           required
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         >
-                          <option value="basic">Basic</option>
-                          <option value="premium">Premium</option>
-                          <option value="instructor">Instructor</option>
+                          <option value="individual">Individual</option>
+                          <option value="school_club">School / Club</option>
                         </select>
                       </div>
 
@@ -806,7 +878,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                             <div className="flex items-center justify-between mb-2">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">{log.actor_name}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                {new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                               </div>
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">Action: {log.action}</div>

@@ -21,6 +21,7 @@ export function formatDate(date: string | Date): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    timeZone: 'Asia/Kolkata',
   });
 }
 

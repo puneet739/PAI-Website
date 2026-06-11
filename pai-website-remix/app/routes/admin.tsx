@@ -1,6 +1,7 @@
 import type { Route } from "./+types/admin";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+import { MEMBERSHIP_TYPE_CONFIG, MAX_LIFE_MEMBERSHIPS, calculateNewExpiry } from "~/lib/constants";
 import { useState } from "react";
 
 interface MemberRequest {
@@ -15,6 +16,11 @@ interface MemberRequest {
   requested_rating: string;
   insurance_type: string;
   coverage_amount: number;
+  renewal_duration_years?: number;
+  renewal_amount?: number;
+  renewal_membership_type?: string | null;
+  member_active_until?: string | null;
+  member_membership_type?: string | null;
   status: string;
   created_at: string;
   member_name: string;
@@ -45,11 +51,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Get all pending requests with member details
   const pendingRequests = await query<MemberRequest>(
-    `SELECT 
-      mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone, 
+    `SELECT
+      mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone,
       mr.details, mr.current_rating, mr.requested_rating, mr.insurance_type,
-      mr.coverage_amount, mr.status, mr.created_at,
-      m.name as member_name
+      mr.coverage_amount, mr.renewal_duration_years, mr.renewal_amount,
+      mr.renewal_membership_type, mr.status, mr.created_at,
+      m.name as member_name, m.active_until as member_active_until,
+      m.membership_type as member_membership_type
     FROM member_requests mr
     JOIN members m ON mr.member_id = m.id
     WHERE mr.status = 'pending'
@@ -67,12 +75,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Get recent processed requests with processor information (paginated)
   const recentRequests = await query<MemberRequest>(
-    `SELECT 
-      mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone, 
+    `SELECT
+      mr.id, mr.member_id, mr.request_type, mr.name, mr.email, mr.phone,
       mr.details, mr.current_rating, mr.requested_rating, mr.insurance_type,
-      mr.coverage_amount, mr.status, mr.created_at, mr.admin_notes, 
+      mr.coverage_amount, mr.renewal_duration_years, mr.renewal_amount,
+      mr.renewal_membership_type, mr.status, mr.created_at, mr.admin_notes,
       mr.processed_by, mr.processed_at,
-      m.name as member_name,
+      m.name as member_name, m.active_until as member_active_until,
+      m.membership_type as member_membership_type,
       processor.name as processor_name
     FROM member_requests mr
     JOIN members m ON mr.member_id = m.id
@@ -170,40 +180,115 @@ export async function action({ request }: Route.ActionArgs) {
         [member_id, userId, actor?.name || "Unknown", "approve_new_membership", JSON.stringify(changes)]
       );
     } else if (request_type === "membership_renewal") {
-      const beforeRows = await query<{ membership_status: string; active_until: any }>(
-        "SELECT membership_status, active_until FROM members WHERE id = ?",
+      const beforeRows = await query<{ membership_status: string; active_until: any; membership_type: string }>(
+        "SELECT membership_status, active_until, membership_type FROM members WHERE id = ?",
         [member_id]
       );
       const before = beforeRows[0] || null;
 
-      // Renew membership for 1 year from current date
-      await query(
-        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
-        [member_id]
+      // Get chosen duration and membership type from the renewal request
+      const renewalMeta = await query<{ renewal_duration_years: number; renewal_membership_type: string | null }>(
+        "SELECT renewal_duration_years, renewal_membership_type FROM member_requests WHERE id = ?",
+        [requestId]
       );
+      const durationYears = renewalMeta[0]?.renewal_duration_years ?? 1;
+      const newMembershipType = renewalMeta[0]?.renewal_membership_type || null;
 
-      const afterRows = await query<{ membership_status: string; active_until: any }>(
-        "SELECT membership_status, active_until FROM members WHERE id = ?",
-        [member_id]
-      );
-      const after = afterRows[0] || null;
+      // ── Life membership approval ─────────────────────────────────────────
+      if (newMembershipType === "life") {
+        const lifeCountRows = await query<{ cnt: number }>(
+          "SELECT COUNT(*) as cnt FROM members WHERE is_life_member = 1"
+        );
+        const lifeCount = Number(lifeCountRows[0]?.cnt ?? 0);
 
-      const changes: any = {};
-      if (before && after) {
-        if (before.membership_status !== after.membership_status) {
-          changes.membership_status = { old: before.membership_status, new: after.membership_status };
+        if (lifeCount >= MAX_LIFE_MEMBERSHIPS) {
+          return { error: `Life membership slots are full (${MAX_LIFE_MEMBERSHIPS}/${MAX_LIFE_MEMBERSHIPS}). Cannot approve.` };
         }
-        const o = before.active_until instanceof Date ? before.active_until.toISOString().slice(0,10) : before.active_until;
-        const n = after.active_until instanceof Date ? after.active_until.toISOString().slice(0,10) : after.active_until;
-        if (o !== n) {
-          changes.active_until = { old: before.active_until, new: after.active_until };
+
+        const nextLifeNumber = lifeCount + 1;
+
+        await query(
+          "UPDATE members SET is_life_member = 1, life_membership_number = ?, membership_status = 'active', active_until = NULL WHERE id = ?",
+          [nextLifeNumber, member_id]
+        );
+
+        const afterRows = await query<{ membership_status: string; is_life_member: number; life_membership_number: number }>(
+          "SELECT membership_status, is_life_member, life_membership_number FROM members WHERE id = ?",
+          [member_id]
+        );
+        const after = afterRows[0] || null;
+
+        await query(
+          "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+          [
+            member_id, userId, actor?.name || "Unknown",
+            "approve_life_membership",
+            JSON.stringify({ is_life_member: { old: 0, new: 1 }, life_membership_number: { old: null, new: nextLifeNumber } }),
+          ]
+        );
+      } else {
+        // ── Annual renewal approval ────────────────────────────────────────
+        // Prorated expiry: extend from current active_until if still valid, else from today
+        await query(
+          `UPDATE members SET
+            membership_status = 'active',
+            active_until = DATE_ADD(
+              IF(active_until IS NOT NULL AND active_until > CURDATE(), active_until, CURDATE()),
+              INTERVAL ? YEAR
+            )
+          WHERE id = ?`,
+          [durationYears, member_id]
+        );
+
+        // Apply membership type upgrade if chosen type differs from current
+        if (newMembershipType && newMembershipType !== before?.membership_type) {
+          await query(
+            "UPDATE members SET membership_type = ? WHERE id = ?",
+            [newMembershipType, member_id]
+          );
+        }
+
+        const afterRows = await query<{ membership_status: string; active_until: any; membership_type: string }>(
+          "SELECT membership_status, active_until, membership_type FROM members WHERE id = ?",
+          [member_id]
+        );
+        const after = afterRows[0] || null;
+
+        const changes: any = {};
+        if (before && after) {
+          if (before.membership_status !== after.membership_status) {
+            changes.membership_status = { old: before.membership_status, new: after.membership_status };
+          }
+          const o = before.active_until instanceof Date ? before.active_until.toISOString().slice(0,10) : before.active_until;
+          const n = after.active_until instanceof Date ? after.active_until.toISOString().slice(0,10) : after.active_until;
+          if (o !== n) {
+            changes.active_until = { old: o, new: n };
+          }
+          if (before.membership_type !== after.membership_type) {
+            changes.membership_type = { old: before.membership_type, new: after.membership_type };
+          }
+        }
+
+        await query(
+          "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+          [member_id, userId, actor?.name || "Unknown", "approve_membership_renewal", JSON.stringify(changes)]
+        );
+
+        // Send renewal approval email to member (non-blocking)
+        const renewedMember = await getMemberById(member_id);
+        if (renewedMember && after?.active_until) {
+          const { sendRenewalApprovalEmail } = await import("~/lib/email.server");
+          sendRenewalApprovalEmail({
+            userName: renewedMember.name,
+            userEmail: renewedMember.email,
+            newExpiryDate: after.active_until instanceof Date
+              ? after.active_until.toISOString().slice(0, 10)
+              : after.active_until,
+            durationYears,
+            membershipType: after.membership_type,
+          }).catch((err) => console.error("Renewal approval email error:", err));
         }
       }
-
-      await query(
-        "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
-        [member_id, userId, actor?.name || "Unknown", "approve_membership_renewal", JSON.stringify(changes)]
-      );
     } else if (request_type === "insurance") {
       // Get insurance details from the request
       const insuranceDetails = await query<{ insurance_type: string; coverage_amount: number }>(
@@ -327,6 +412,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Asia/Kolkata',
     });
   };
 
@@ -338,7 +424,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200';
       case 'rating_upgrade':
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200';
-      case 'renewal':
+      case 'membership_renewal':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
@@ -353,7 +439,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
         return 'Insurance';
       case 'rating_upgrade':
         return 'Rating Upgrade';
-      case 'renewal':
+      case 'membership_renewal':
         return 'Renewal';
       default:
         return type;
@@ -375,7 +461,7 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar currentPath="/admin" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/admin" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       <div className="flex-1 lg:ml-0 min-w-0">
         <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
@@ -498,6 +584,50 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
                               </div>
                               <div className="text-xs text-purple-700 dark:text-purple-300">
                                 Premium: ₹{request.insurance_type === 'basic' ? '2,000' : request.insurance_type === 'premium' ? '5,000' : '10,000'}/year
+                              </div>
+                            </div>
+                          )}
+                          {request.request_type === 'membership_renewal' && (
+                            <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800 space-y-0.5">
+                              {request.renewal_membership_type && request.renewal_membership_type !== request.member_membership_type && (
+                                <div className="text-xs font-semibold text-orange-900 dark:text-orange-200">
+                                  Type: {MEMBERSHIP_TYPE_CONFIG.find(t => t.value === request.member_membership_type)?.label ?? request.member_membership_type}
+                                  {' → '}
+                                  {request.renewal_membership_type === 'life'
+                                    ? 'Life Membership'
+                                    : (MEMBERSHIP_TYPE_CONFIG.find(t => t.value === request.renewal_membership_type)?.label ?? request.renewal_membership_type)}
+                                </div>
+                              )}
+                              <div className="text-xs font-semibold text-orange-900 dark:text-orange-200">
+                                Duration: {request.renewal_membership_type === 'life'
+                                  ? 'Lifetime'
+                                  : `${request.renewal_duration_years ?? 1} Year${(request.renewal_duration_years ?? 1) > 1 ? 's' : ''}`}
+                              </div>
+                              <div className="text-xs text-orange-700 dark:text-orange-300">
+                                Expected Payment: ₹{Number(request.renewal_amount ?? 0).toLocaleString('en-IN')}
+                              </div>
+                              <div className="text-xs text-orange-700 dark:text-orange-300">
+                                Current Expiry: {request.member_active_until
+                                  ? (() => {
+                                      const v: any = request.member_active_until;
+                                      const s = v instanceof Date
+                                        ? v.toISOString().slice(0, 10)
+                                        : String(v).slice(0, 10);
+                                      const [yr, mo, dy] = s.split('-').map(Number);
+                                      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                      return `${dy} ${months[mo-1]} ${yr}`;
+                                    })()
+                                  : 'N/A'}
+                              </div>
+                              <div className="text-xs font-medium text-green-700 dark:text-green-400">
+                                New Expiry: {request.renewal_membership_type === 'life'
+                                  ? 'Lifetime'
+                                  : (() => {
+                                      const expiry = calculateNewExpiry(request.member_active_until as any, request.renewal_duration_years ?? 1);
+                                      const [yr, mo, dy] = expiry.split('-').map(Number);
+                                      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                      return `${dy} ${months[mo-1]} ${yr}`;
+                                    })()}
                               </div>
                             </div>
                           )}

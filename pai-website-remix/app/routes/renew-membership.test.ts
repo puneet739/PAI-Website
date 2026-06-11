@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock dependencies
 const mockQuery = vi.fn();
 const mockGetMemberById = vi.fn();
 const mockRequireUserId = vi.fn();
@@ -22,102 +21,64 @@ vi.mock('~/lib/email.server', () => ({
   sendMembershipRenewalEmail: (...args: any[]) => mockSendMembershipRenewalEmail(...args),
 }));
 
-describe('Renew Membership - Async Email Sending', () => {
+const baseMember = {
+  id: 1,
+  name: 'Test User',
+  email: 'test@example.com',
+  phone: '+919876543210',
+  pilot_rating: 'P2',
+  active_until: '2024-01-01',
+  membership_type: 'individual',
+  is_life_member: 0,
+  membership_status: 'active',
+  membership_id: 'PAI-MEM-00001',
+};
+
+function makeRequest(fields: Record<string, string> = {}) {
+  const formData = new URLSearchParams({ years: '1', ...fields });
+  return new Request('http://localhost/renew-membership', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData.toString(),
+  });
+}
+
+describe('Renew Membership Action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireUserId.mockResolvedValue(1);
-    mockGetMemberById.mockResolvedValue({
-      id: 1,
-      name: 'Test User',
-      email: 'test@example.com',
-      phone: '+919876543210',
-      pilot_rating: 'P2',
-      active_until: '2024-01-01',
-      membership_type: 'regular',
-    });
+    mockGetMemberById.mockResolvedValue({ ...baseMember });
   });
 
   describe('Non-Blocking Email Behavior', () => {
     it('should not await email sending and return immediately', async () => {
-      // Mock no existing pending request
-      mockQuery.mockResolvedValueOnce([]);
-      // Mock successful insert
-      mockQuery.mockResolvedValueOnce({ insertId: 123 });
-      
-      // Mock email to take a long time (simulating slow SMTP)
+      mockQuery.mockResolvedValueOnce([]); // no pending request
+      mockQuery.mockResolvedValueOnce({ insertId: 123 }); // insert
+
       let emailResolved = false;
-      mockSendMembershipRenewalEmail.mockImplementation(() => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            emailResolved = true;
-            resolve(undefined);
-          }, 5000); // 5 second delay
-        });
-      });
+      mockSendMembershipRenewalEmail.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => { emailResolved = true; resolve(undefined); }, 5000))
+      );
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewal request');
-
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
       const startTime = Date.now();
-      const result = await action({ request, params: {}, context: {} } as any);
-      const endTime = Date.now();
-      const duration = endTime - startTime;
+      const result = await action({ request: makeRequest({ years: '1' }), params: {}, context: {} } as any);
+      const duration = Date.now() - startTime;
 
-      // Action should complete in less than 1 second (not waiting for email)
       expect(duration).toBeLessThan(1000);
-      
-      // Email should NOT be resolved yet
       expect(emailResolved).toBe(false);
-      
-      // Should redirect successfully
-      expect(result).toBeInstanceOf(Response);
-      expect((result as Response).status).toBe(302);
-      expect((result as Response).headers.get('Location')).toBe('/dashboard?renewal=requested');
+      expect(result).toHaveProperty('submitted', true);
     });
 
     it('should handle email failures gracefully without blocking user', async () => {
       mockQuery.mockResolvedValueOnce([]);
       mockQuery.mockResolvedValueOnce({ insertId: 123 });
-      
-      // Mock email to fail
       mockSendMembershipRenewalEmail.mockRejectedValueOnce(new Error('SMTP connection failed'));
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewal request');
+      const result = await action({ request: makeRequest(), params: {}, context: {} } as any);
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
-      // Should not throw error even if email fails
-      const result = await action({ request, params: {}, context: {} } as any);
-
-      // Should still redirect successfully
-      expect(result).toBeInstanceOf(Response);
-      expect((result as Response).status).toBe(302);
-      expect((result as Response).headers.get('Location')).toBe('/dashboard?renewal=requested');
+      expect(result).toHaveProperty('submitted', true);
     });
 
     it('should call email function with correct parameters', async () => {
@@ -126,33 +87,15 @@ describe('Renew Membership - Async Email Sending', () => {
       mockSendMembershipRenewalEmail.mockResolvedValueOnce(undefined);
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'John Doe');
-      formData.append('email', 'john@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewing after expiry');
+      await action({ request: makeRequest({ years: '2' }), params: {}, context: {} } as any);
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
-      await action({ request, params: {}, context: {} } as any);
-
-      // Email function should be called with correct data
       expect(mockSendMembershipRenewalEmail).toHaveBeenCalledTimes(1);
-      const emailParams = mockSendMembershipRenewalEmail.mock.calls[0][0];
-      expect(emailParams.userName).toBe('John Doe');
-      expect(emailParams.userEmail).toBe('john@example.com');
-      expect(emailParams.phone).toBe('+919876543210');
-      expect(emailParams.details).toBe('Renewing after expiry');
-      expect(emailParams.currentRating).toBe('P2');
-      expect(emailParams.expiryDate).toBe('2024-01-01');
-      expect(emailParams.requestId).toBe(456);
+      const params = mockSendMembershipRenewalEmail.mock.calls[0][0];
+      expect(params.userName).toBe('Test User');
+      expect(params.userEmail).toBe('test@example.com');
+      expect(params.requestId).toBe(456);
+      expect(params.renewalDurationYears).toBe(2);
+      expect(params.renewalAmount).toBe(1000); // individual: 500 * 2
     });
 
     it('should store request in database before triggering email', async () => {
@@ -161,109 +104,59 @@ describe('Renew Membership - Async Email Sending', () => {
       mockSendMembershipRenewalEmail.mockResolvedValueOnce(undefined);
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      await action({ request: makeRequest(), params: {}, context: {} } as any);
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
-      await action({ request, params: {}, context: {} } as any);
-
-      // Database should be called before email
       expect(mockQuery).toHaveBeenCalledTimes(2);
-      expect(mockSendMembershipRenewalEmail).toHaveBeenCalledTimes(1);
-      
-      // Verify insert query was called
       const insertCall = mockQuery.mock.calls[1];
       expect(insertCall[0]).toContain('INSERT INTO member_requests');
       expect(insertCall[0]).toContain('membership_renewal');
     });
   });
 
-  describe('Validation', () => {
-    it('should validate required fields', async () => {
+  describe('Duration Pricing', () => {
+    it('should return correct amount for 1 year individual', async () => {
+      mockQuery.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce({ insertId: 1 });
+
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', '');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      const result = await action({ request: makeRequest({ years: '1' }), params: {}, context: {} } as any) as any;
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
-      const result = await action({ request, params: {}, context: {} } as any);
-
-      expect(result).toEqual({ error: 'Name is required' });
-      expect(mockQuery).not.toHaveBeenCalled();
-      expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
+      expect(result.years).toBe(1);
+      expect(result.amount).toBe(500);
     });
 
-    it('should prevent duplicate pending renewal requests', async () => {
-      // Mock existing pending request
-      mockQuery.mockResolvedValueOnce([{ id: 1 }]);
+    it('should return correct amount for 3 years school_club', async () => {
+      mockGetMemberById.mockResolvedValueOnce({ ...baseMember, membership_type: 'school_club' });
+      mockQuery.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce({ insertId: 2 });
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      const result = await action({ request: makeRequest({ years: '3' }), params: {}, context: {} } as any) as any;
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-
-      const result = await action({ request, params: {}, context: {} } as any);
-
-      expect(result).toEqual({ error: 'You already have a pending membership renewal request' });
-      expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
+      expect(result.years).toBe(3);
+      expect(result.amount).toBe(6000); // school_club: 2000 * 3
     });
   });
 
-  describe('Details Handling', () => {
-    it('should use default details if not provided', async () => {
-      mockQuery.mockResolvedValueOnce([]);
-      mockQuery.mockResolvedValueOnce({ insertId: 100 });
-      mockSendMembershipRenewalEmail.mockResolvedValueOnce(undefined);
+  describe('Validation', () => {
+    it('should reject invalid duration', async () => {
+      mockQuery.mockResolvedValueOnce([]); // no pending request (duplicate check runs before year validation)
 
       const { action } = await import('./renew-membership');
-      
-      const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
-      // No details field
+      const result = await action({ request: makeRequest({ years: '5' }), params: {}, context: {} } as any);
 
-      const request = new Request('http://localhost/renew-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
+      expect(result).toEqual({ error: 'Please select a valid duration (1, 2, or 3 years).' });
+    });
 
-      await action({ request, params: {}, context: {} } as any);
+    it('should prevent duplicate pending renewal requests', async () => {
+      mockQuery.mockResolvedValueOnce([{ id: 1 }]); // existing pending
 
-      const emailParams = mockSendMembershipRenewalEmail.mock.calls[0][0];
-      expect(emailParams.details).toBe('Membership renewal request');
+      const { action } = await import('./renew-membership');
+      const result = await action({ request: makeRequest(), params: {}, context: {} } as any);
+
+      expect(result).toHaveProperty('error');
+      expect((result as any).error).toContain('pending renewal request');
+      expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
     });
   });
 });

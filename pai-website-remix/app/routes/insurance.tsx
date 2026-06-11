@@ -116,7 +116,7 @@ export async function action({ request }: Route.ActionArgs) {
       userName: member.name,
       userEmail: email,
       phone,
-      dateOfBirth: new Date(dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      dateOfBirth: new Date(dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }),
       nominee,
       insurancePlan: insurancePlan.charAt(0).toUpperCase() + insurancePlan.slice(1),
       coverage: `₹${(details.coverage / 100000).toFixed(0)} Lakh`,
@@ -157,6 +157,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      timeZone: 'Asia/Kolkata',
     });
   };
 
@@ -169,7 +170,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/insurance" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/insurance" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       {/* Main Content */}
       <div className="flex-1">

@@ -11,6 +11,7 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=mysql://pai_user:pai_password@mysql:3306/pai_db
       #- DATABASE_URL=mysql://root:UOxdfOFBgEGIsGjykOYuJLwoQbCqWwnN@crossover.proxy.rlwy.net:35058/railway
+      - PAI_UPI_VPA=eazypay.2000011704@icici
     depends_on:
       mysql:
         condition: service_healthy
@@ -22,6 +23,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: pai-mysql
+    platform: linux/arm64
     ports:
       - "3306:3306"
     environment:

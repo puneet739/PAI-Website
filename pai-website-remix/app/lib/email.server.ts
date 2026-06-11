@@ -118,6 +118,24 @@ interface MembershipRenewalEmail {
   currentRating: string;
   expiryDate: string;
   requestId: number;
+  renewalDurationYears?: number;
+  renewalAmount?: number;
+}
+
+interface RenewalReminderEmail {
+  userName: string;
+  userEmail: string;
+  expiryDate: string;
+  membershipType: string;
+  renewLink: string;
+}
+
+interface RenewalApprovalEmail {
+  userName: string;
+  userEmail: string;
+  newExpiryDate: string;
+  durationYears: number;
+  membershipType: string;
 }
 
 // Send new membership request notification
@@ -512,13 +530,12 @@ export async function sendPasswordResetOTPEmail(data: PasswordResetOTPEmail) {
 
 // Send membership renewal request notification
 export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
-  // Check if email is enabled
   if (!isEmailEnabled()) {
     console.log("Email disabled. Skipping membership renewal email.");
     return;
   }
 
-  const { userName, userEmail, phone, details, currentRating, expiryDate, requestId } = data;
+  const { userName, userEmail, phone, details, currentRating, expiryDate, requestId, renewalDurationYears, renewalAmount } = data;
 
   const userEmailContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -533,15 +550,16 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
         <p><strong>Email:</strong> ${userEmail}</p>
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Current Rating:</strong> ${currentRating}</p>
-        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })}</p>
+        ${renewalDurationYears ? `<p><strong>Duration:</strong> ${renewalDurationYears} Year${renewalDurationYears > 1 ? 's' : ''}</p>` : ''}
+        ${renewalAmount ? `<p><strong>Amount:</strong> ₹${renewalAmount.toLocaleString('en-IN')}</p>` : ''}
       </div>
 
       <h3 style="color: #0284c7;">Next Steps:</h3>
       <ol>
-        <li>Our admin team will review your renewal request</li>
-        <li>You will receive a QR code via email for payment</li>
-        <li>Share the payment screenshot with admin/base</li>
-        <li>Your membership will be renewed for 1 year upon verification</li>
+        <li>Complete UPI payment using the QR code shown on the renewal page</li>
+        <li>Admin will verify payment and activate within 48 hours</li>
+        <li>Track your request status at My Requests</li>
       </ol>
 
       <p>If you have any questions, please contact us at ${BASE_EMAIL_STRING}</p>
@@ -566,7 +584,7 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
         <p><strong>Email:</strong> ${userEmail}</p>
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Current Rating:</strong> ${currentRating}</p>
-        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p><strong>Previous Expiry:</strong> ${new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })}</p>
         <p><strong>Details:</strong></p>
         <p style="background-color: white; padding: 10px; border-radius: 4px;">${details}</p>
       </div>
@@ -598,5 +616,194 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
     console.log(`Membership renewal emails sent for request #${requestId} using ${EMAIL_PROVIDER}`);
   } catch (error) {
     console.error("Error sending membership renewal emails:", error);
+  }
+}
+
+// Helper to format renewal pricing per membership type
+function renewalPricingLine(membershipType: string): string {
+  if (membershipType === 'instructor') {
+    return '₹2,000 / year &nbsp;|&nbsp; ₹4,000 / 2 years &nbsp;|&nbsp; ₹6,000 / 3 years';
+  }
+  return '₹500 / year &nbsp;|&nbsp; ₹1,000 / 2 years &nbsp;|&nbsp; ₹1,500 / 3 years';
+}
+
+// E1 — 15 days before expiry
+export async function sendRenewalReminder15DaysBefore(data: RenewalReminderEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, expiryDate, membershipType, renewLink } = data;
+  const formatted = new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Your PAI Membership expires in 15 days</h2>
+      <p>Dear ${userName},</p>
+      <p>Your PAI membership will expire on <strong>${formatted}</strong>. Renew now to keep your benefits uninterrupted.</p>
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #0284c7;">Renewal Options</h3>
+        <p>${renewalPricingLine(membershipType)}</p>
+        <p><strong>Your benefits include:</strong> Insurance validity, Member card, Test access, Event registrations</p>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${renewLink}" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Renew Now</a>
+      </div>
+      <p>If you have any questions, contact us at ${BASE_EMAIL_STRING}</p>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Automated Reminder</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: 'Your PAI Membership expires in 15 days', html });
+    console.log(`Renewal reminder (15 days before) sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal reminder (15d before):', error);
+  }
+}
+
+// E2 — 2 days before expiry
+export async function sendRenewalReminder2DaysBefore(data: RenewalReminderEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, expiryDate, membershipType, renewLink } = data;
+  const formatted = new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #f97316;">Action required: Membership expires in 2 days</h2>
+      <p>Dear ${userName},</p>
+      <p><strong>Only 2 days left.</strong> Your PAI membership expires on <strong>${formatted}</strong>.</p>
+      <div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;">
+        <p style="margin: 0; color: #9a3412;"><strong>If you don't renew:</strong></p>
+        <ul style="color: #9a3412; margin: 8px 0;">
+          <li>Membership card becomes invalid</li>
+          <li>Insurance coverage may lapse</li>
+          <li>Re-applying takes longer than renewing</li>
+        </ul>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${renewLink}" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Renew Now</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Automated Reminder</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: 'Action required: Your PAI Membership expires in 2 days', html });
+    console.log(`Renewal reminder (2 days before) sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal reminder (2d before):', error);
+  }
+}
+
+// E3 — 3 days after expiry
+export async function sendRenewalReminder3DaysAfter(data: RenewalReminderEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, expiryDate, renewLink } = data;
+  const formatted = new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Your PAI Membership has expired</h2>
+      <p>Dear ${userName},</p>
+      <p>Your PAI membership expired on <strong>${formatted}</strong>. Don't worry — renewal is quick and takes just 2 minutes.</p>
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #0284c7;">Your pilot history and records are preserved. Renewing restores full access immediately upon admin approval.</p>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${renewLink}" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Renew Now</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Automated Reminder</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: 'Your PAI Membership has expired', html });
+    console.log(`Renewal reminder (3 days after) sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal reminder (3d after):', error);
+  }
+}
+
+// E4 — 15 days after expiry
+export async function sendRenewalReminder15DaysAfter(data: RenewalReminderEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, expiryDate, renewLink } = data;
+  const formatted = new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">You're missing out — renew your PAI Membership</h2>
+      <p>Dear ${userName},</p>
+      <p>Your membership expired on <strong>${formatted}</strong> — that's 15 days ago. Here's what you're currently missing:</p>
+      <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <ul style="color: #0284c7; margin: 0; padding-left: 20px;">
+          <li>Active membership card</li>
+          <li>Paragliding insurance coverage</li>
+          <li>Access to PAI events &amp; competitions</li>
+          <li>Pilot rating upgrades</li>
+        </ul>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${renewLink}" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Renew Your Membership</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Automated Reminder</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: "You're missing out — renew your PAI Membership", html });
+    console.log(`Renewal reminder (15 days after) sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal reminder (15d after):', error);
+  }
+}
+
+// E5 — 30 days after expiry (final reminder)
+export async function sendRenewalReminder30DaysAfter(data: RenewalReminderEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, expiryDate, renewLink } = data;
+  const formatted = new Date(expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0ea5e9;">Last reminder: Renew your PAI Membership</h2>
+      <p>Dear ${userName},</p>
+      <p>Your membership expired on <strong>${formatted}</strong>. This is our final automated reminder.</p>
+      <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e;">We won't send further reminders after this. You can still renew anytime by visiting the PAI portal.</p>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${renewLink}" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Renew Now</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Final Automated Reminder</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: 'Last reminder: Renew your PAI Membership', html });
+    console.log(`Renewal reminder (30 days after / final) sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal reminder (30d after):', error);
+  }
+}
+
+// Renewal approval confirmation — sent when admin approves the renewal request
+export async function sendRenewalApprovalEmail(data: RenewalApprovalEmail) {
+  if (!isEmailEnabled()) return;
+  const { userName, userEmail, newExpiryDate, durationYears, membershipType } = data;
+  const formatted = new Date(newExpiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const typeLabel = membershipType.charAt(0).toUpperCase() + membershipType.slice(1);
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #16a34a;">Your PAI Membership has been renewed!</h2>
+      <p>Dear ${userName},</p>
+      <p>Great news — your membership renewal has been approved and your membership is now active.</p>
+      <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #16a34a;">
+        <h3 style="margin-top: 0; color: #15803d;">Renewal Details</h3>
+        <p><strong>Membership Type:</strong> ${typeLabel}</p>
+        <p><strong>Duration Renewed:</strong> ${durationYears} Year${durationYears > 1 ? 's' : ''}</p>
+        <p><strong>New Expiry Date:</strong> ${formatted}</p>
+      </div>
+      <p>You can now download your updated membership card from the PAI portal.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="/generate-card" style="background: linear-gradient(135deg, #0ea5e9, #f97316); color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 16px;">Download Membership Card</a>
+      </div>
+      <p>If you have any questions, contact us at ${BASE_EMAIL_STRING}</p>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">Paragliding Association of India — Automated Notification</p>
+    </div>`;
+  try {
+    await sendEmail({ to: userEmail, subject: 'Your PAI Membership has been renewed!', html });
+    console.log(`Renewal approval email sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Error sending renewal approval email:', error);
   }
 }

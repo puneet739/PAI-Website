@@ -65,17 +65,18 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 
   // Check if membership is expired
   const isExpired = member.active_until && new Date(member.active_until) < new Date();
-  const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+  const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : null;
 
   const getMembershipBadgeColor = (type: string) => {
     switch (type) {
-      case "instructor":
+      case "school_club":
         return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200 dark:border-purple-800";
-      case "premium":
+      case "individual":
         return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-800";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-200 dark:border-gray-800";
@@ -98,7 +99,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <DashboardSidebar currentPath="/dashboard" userRole={member.role_name} />
+      <DashboardSidebar currentPath="/dashboard" userRole={member.role_name} membershipType={member.membership_type} isLifeMember={member.is_life_member} membershipStatus={member.membership_status} activeUntil={member.active_until} />
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
@@ -219,7 +220,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                   Membership Renewal Request Submitted!
                 </h3>
                 <p className="text-sm text-green-800 dark:text-green-300">
-                  Your membership renewal request has been submitted and is pending admin review. You will receive a QR code via email for payment. Once approved and payment is verified, your membership will be renewed for 1 year.
+                  Your membership renewal request has been submitted and is pending admin review. Please complete the UPI payment using the QR code shown on the renewal page. Admin will verify and activate within 48 hours.
                 </p>
               </div>
             </div>
@@ -245,6 +246,33 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
         )}
+
+        {/* Expiry Warning Banner — active members with ≤60 days left */}
+        {(() => {
+          if (member.is_life_member === 1 || isExpired || !member.active_until) return null;
+          const days = Math.ceil((new Date(member.active_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          if (days < 0 || days > 60) return null;
+          return (
+            <div className="mb-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                    Your membership expires in <strong>{days} day{days !== 1 ? 's' : ''}</strong> ({expiryDate})
+                  </p>
+                </div>
+                <a
+                  href="/renew-membership"
+                  className="text-sm font-semibold text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition whitespace-nowrap"
+                >
+                  Renew Now →
+                </a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
@@ -426,13 +454,15 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Date of Birth</span>
                   <span className="text-sm text-gray-900 dark:text-white">
-                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not provided"}
+                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "Not provided"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Membership Type</span>
                   <span className={`text-xs px-3 py-1 rounded-full border font-medium ${getMembershipBadgeColor(member.membership_type)}`}>
-                    {member.membership_type.charAt(0).toUpperCase() + member.membership_type.slice(1)}
+                    {member.is_life_member === 1
+                      ? `${member.membership_type === 'individual' ? 'Individual' : 'School / Club'} — Life Member #${member.life_membership_number}`
+                      : member.membership_type === 'individual' ? 'Individual' : 'School / Club'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
@@ -491,7 +521,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{event.location}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {new Date(event.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        {new Date(event.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", timeZone: "Asia/Kolkata" })}
                       </p>
                     </div>
                   ))}

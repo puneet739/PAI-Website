@@ -1,3 +1,70 @@
+// Membership Renewal Constants
+
+export interface MembershipTypeConfig {
+  value: string;
+  label: string;
+  annualRate: number;
+}
+
+export const MAX_LIFE_MEMBERSHIPS = 100;
+export const LIFE_MEMBERSHIP_FEE = 5000; // one-time fee — confirm with manager
+
+// Single source of truth — add new membership types here and the
+// rest of the system (pricing, type selector, admin) picks them up automatically.
+export const MEMBERSHIP_TYPE_CONFIG: MembershipTypeConfig[] = [
+  { value: 'individual',  label: 'Individual',    annualRate: 500  },
+  { value: 'school_club', label: 'School / Club', annualRate: 2000 },
+];
+
+// Derived map kept for any legacy references
+export const RENEWAL_PRICING: Record<string, number> = Object.fromEntries(
+  MEMBERSHIP_TYPE_CONFIG.map((t) => [t.value, t.annualRate])
+);
+
+export const RENEWAL_DURATIONS = [
+  { years: 1, label: '1 Year' },
+  { years: 2, label: '2 Years' },
+  { years: 3, label: '3 Years' },
+] as const;
+
+export function getRenewalPrice(membershipType: string, years: number): number {
+  const config = MEMBERSHIP_TYPE_CONFIG.find((t) => t.value === membershipType);
+  return (config?.annualRate ?? 500) * years;
+}
+
+// Returns a YYYY-MM-DD string using IST (UTC+5:30) for "today".
+// Extends from activeUntil if it is still in the future (prorated), otherwise from today.
+export function calculateNewExpiry(
+  activeUntil: string | Date | null | undefined,
+  years: number
+): string {
+  // Current date in IST
+  const todayIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  let baseStr: string;
+  if (!activeUntil) {
+    baseStr = todayIST;
+  } else {
+    // Normalize any input format (Date object, ISO string, YYYY-MM-DD) to YYYY-MM-DD
+    const normalized =
+      activeUntil instanceof Date
+        ? activeUntil.toISOString().slice(0, 10)
+        : activeUntil.length > 10
+        ? new Date(activeUntil).toISOString().slice(0, 10)
+        : activeUntil;
+    baseStr = normalized > todayIST ? normalized : todayIST;
+  }
+
+  const [yr, mo, dy] = baseStr.split('-').map(Number);
+  // JS Date(year, monthIndex, day) handles leap-year edge cases automatically
+  const result = new Date(yr + years, mo - 1, dy);
+  return [
+    result.getFullYear(),
+    String(result.getMonth() + 1).padStart(2, '0'),
+    String(result.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 // Pilot Rating Constants
 export interface PilotRating {
   value: string;
