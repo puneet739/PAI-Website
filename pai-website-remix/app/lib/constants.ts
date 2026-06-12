@@ -1,3 +1,62 @@
+// ── Membership Renewal ───────────────────────────────────────────────────────
+
+export interface MembershipTypeConfig {
+  value: string;
+  label: string;
+  annualRate: number;
+}
+
+export const MAX_LIFE_MEMBERSHIPS = 100;
+export const LIFE_MEMBERSHIP_FEE = 5000;
+
+// Add new membership types here — pricing and forms pick up automatically
+export const MEMBERSHIP_TYPE_CONFIG: MembershipTypeConfig[] = [
+  { value: 'individual',  label: 'Individual',    annualRate: 500  },
+  { value: 'school_club', label: 'School / Club', annualRate: 2000 },
+];
+
+export const RENEWAL_PRICING: Record<string, number> = Object.fromEntries(
+  MEMBERSHIP_TYPE_CONFIG.map((t) => [t.value, t.annualRate])
+);
+
+export const RENEWAL_DURATIONS = [
+  { years: 1, label: '1 Year'  },
+  { years: 2, label: '2 Years' },
+  { years: 3, label: '3 Years' },
+] as const;
+
+export function getRenewalPrice(membershipType: string, years: number): number {
+  const config = MEMBERSHIP_TYPE_CONFIG.find((t) => t.value === membershipType);
+  return (config?.annualRate ?? 500) * years;
+}
+
+// Extends from activeUntil if still in future, otherwise starts from today (IST)
+export function calculateNewExpiry(
+  activeUntil: string | Date | null | undefined,
+  years: number
+): string {
+  const todayIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  let baseStr: string;
+  if (!activeUntil) {
+    baseStr = todayIST;
+  } else {
+    const normalized =
+      activeUntil instanceof Date
+        ? activeUntil.toISOString().slice(0, 10)
+        : (activeUntil as string).length > 10
+        ? new Date(activeUntil as string).toISOString().slice(0, 10)
+        : (activeUntil as string);
+    baseStr = normalized > todayIST ? normalized : todayIST;
+  }
+
+  const base = new Date(baseStr + "T00:00:00Z");
+  base.setUTCFullYear(base.getUTCFullYear() + years);
+  return base.toISOString().slice(0, 10);
+}
+
+// ── Pilot Rating Constants ───────────────────────────────────────────────────
+
 // Pilot Rating Constants
 export interface PilotRating {
   value: string;

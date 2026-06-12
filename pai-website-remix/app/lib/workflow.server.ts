@@ -27,6 +27,7 @@ export async function initializeWorkflows() {
 
     // Dynamic import to avoid loading workflow code in client bundle
     const { notifyPendingRequests } = await import("../../workflows/pending-requests-notifier");
+    const { sendRenewalReminders } = await import("../../workflows/renewal-reminders");
 
     // Schedule the pending requests notification workflow
     scheduledTask = cron.schedule(WORKFLOW_CRON_SCHEDULE, async () => {
@@ -36,6 +37,7 @@ export async function initializeWorkflows() {
       
       try {
         await notifyPendingRequests();
+        await sendRenewalReminders();
         console.log("=".repeat(60));
         console.log("✅ Workflow completed successfully");
         console.log("=".repeat(60) + "\n");
