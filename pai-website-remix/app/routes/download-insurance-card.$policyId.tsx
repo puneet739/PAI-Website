@@ -143,11 +143,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   doc.fontSize(10)
      .font('Helvetica-Bold')
      .fillColor('#ffffff')
-     .text(new Date(policy.start_date).toLocaleDateString('en-IN', {
-       day: '2-digit',
-       month: 'short',
-       year: 'numeric',
-       timeZone: 'Asia/Kolkata',
+     .text(new Date(policy.start_date).toLocaleDateString('en-IN', { 
+       day: '2-digit', 
+       month: 'short', 
+       year: 'numeric' 
      }), 220, 180);
 
   doc.fontSize(8)
@@ -158,11 +157,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   doc.fontSize(10)
      .font('Helvetica-Bold')
      .fillColor('#ffffff')
-     .text(new Date(policy.end_date).toLocaleDateString('en-IN', {
-       day: '2-digit',
-       month: 'short',
-       year: 'numeric',
-       timeZone: 'Asia/Kolkata',
+     .text(new Date(policy.end_date).toLocaleDateString('en-IN', { 
+       day: '2-digit', 
+       month: 'short', 
+       year: 'numeric' 
      }), 220, 210);
 
   // Footer

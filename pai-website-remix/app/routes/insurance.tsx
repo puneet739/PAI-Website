@@ -116,7 +116,7 @@ export async function action({ request }: Route.ActionArgs) {
       userName: member.name,
       userEmail: email,
       phone,
-      dateOfBirth: new Date(dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }),
+      dateOfBirth: new Date(dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       nominee,
       insurancePlan: insurancePlan.charAt(0).toUpperCase() + insurancePlan.slice(1),
       coverage: `₹${(details.coverage / 100000).toFixed(0)} Lakh`,
@@ -157,7 +157,6 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      timeZone: 'Asia/Kolkata',
     });
   };
 

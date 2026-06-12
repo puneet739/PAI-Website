@@ -65,12 +65,11 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
-    timeZone: "Asia/Kolkata",
   });
 
   // Check if membership is expired
   const isExpired = member.active_until && new Date(member.active_until) < new Date();
-  const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : null;
+  const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
 
   const getMembershipBadgeColor = (type: string) => {
     switch (type) {
@@ -454,7 +453,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Date of Birth</span>
                   <span className="text-sm text-gray-900 dark:text-white">
-                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "Not provided"}
+                    {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not provided"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-800">
@@ -521,7 +520,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{event.location}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {new Date(event.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", timeZone: "Asia/Kolkata" })}
+                        {new Date(event.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                       </p>
                     </div>
                   ))}

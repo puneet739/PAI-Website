@@ -46,7 +46,6 @@ export default function Tests({ loaderData }: Route.ComponentProps) {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      timeZone: 'Asia/Kolkata',
     });
   };
 

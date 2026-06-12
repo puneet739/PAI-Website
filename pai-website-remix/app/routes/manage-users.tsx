@@ -878,7 +878,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                             <div className="flex items-center justify-between mb-2">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">{log.actor_name}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
+                                {new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">Action: {log.action}</div>
