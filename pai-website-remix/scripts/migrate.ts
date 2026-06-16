@@ -81,7 +81,73 @@ async function run() {
   } catch (err: any) {
     console.error("❌ Failed (migration 09):", err.message);
   }
+    
+  // Migration 10: Add life member columns and migrate membership types
+    const col4 = await columnExists(conn, "members", "is_life_member", db);
+    const col5 = await columnExists(conn, "members", "life_membership_number", db);
 
+    try {
+      if (!col4) {
+        await conn.execute(
+          `ALTER TABLE members ADD COLUMN is_life_member TINYINT(1) NOT NULL DEFAULT 0`
+        );
+        console.log("Applied: Add is_life_member to members");
+      } else {
+        console.log("Already applied: is_life_member already exists");
+      }
+
+      if (!col5) {
+        await conn.execute(
+          `ALTER TABLE members ADD COLUMN life_membership_number INT NULL`
+        );
+        console.log("Applied: Add life_membership_number to members");
+      } else {
+        console.log("Already applied: life_membership_number already exists");
+      }
+
+      if (!col4 || !col5) {
+        await conn.execute(`UPDATE members SET is_life_member = 1 WHERE membership_type = 'life'`);
+        console.log("Applied: Flagged existing life members");
+
+        await conn.execute(`
+          UPDATE members m
+          JOIN (
+            SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC) as rn
+            FROM members WHERE is_life_member = 1
+          ) AS ranked ON m.id = ranked.id
+          SET m.life_membership_number = ranked.rn
+          WHERE m.is_life_member = 1
+        `);
+        console.log("Applied: Assigned life membership numbers");
+
+        await conn.execute(
+          `ALTER TABLE members MODIFY COLUMN membership_type
+           ENUM('basic','premium','instructor','life','individual','school_club') DEFAULT 'individual'`
+        );
+        await conn.execute(
+          `UPDATE members SET membership_type = 'individual' WHERE membership_type IN ('basic','premium','life')`
+        );
+        await conn.execute(
+          `UPDATE members SET membership_type = 'school_club' WHERE membership_type = 'instructor'`
+        );
+        await conn.execute(
+          `ALTER TABLE members MODIFY COLUMN membership_type ENUM('individual','school_club') DEFAULT 'individual'`
+        );
+        console.log("Applied: Migrated membership_type ENUM to individual/school_club");
+
+        await conn.execute(
+          `UPDATE member_requests SET renewal_membership_type = 'individual'
+           WHERE renewal_membership_type IN ('basic','premium','life')`
+        );
+        await conn.execute(
+          `UPDATE member_requests SET renewal_membership_type = 'school_club'
+           WHERE renewal_membership_type = 'instructor'`
+        );
+        console.log("Applied: Migrated renewal_membership_type in member_requests");
+      }
+    } catch (err: any) {
+      console.error("Failed (migration 10):", err.message);
+    }
   await conn.end();
   console.log("\nDone.");
 }
