@@ -79,6 +79,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const formData = await request.formData();
   const renewalType = (formData.get("renewal_type") as string) || "annual";
+  const step = (formData.get("step") as string) || "review";
   const upiVpa = process.env.PAI_UPI_VPA || "eazypay.2000011704@icici";
   const membershipId = member.membership_id || `PAI-MEM-${String(userId).padStart(5, "0")}`;
 
@@ -106,6 +107,19 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (lifeCount >= MAX_LIFE_MEMBERSHIPS) {
       return { error: `Life membership slots are full (${MAX_LIFE_MEMBERSHIPS}/${MAX_LIFE_MEMBERSHIPS}). No slots available.` };
+    }
+
+    if (step !== "confirm") {
+      return {
+        showPayment: true,
+        isLifeApplication: true,
+        amount: LIFE_MEMBERSHIP_FEE,
+        years: 0,
+        chosenType: "life",
+        newExpiry: null,
+        upiVpa,
+        membershipId,
+      };
     }
 
     const result = await query(
@@ -149,6 +163,19 @@ export async function action({ request }: Route.ActionArgs) {
 
   const amount = getRenewalPrice(chosenType, years);
   const newExpiry = calculateNewExpiry(member.active_until, years);
+  
+  if (step !== "confirm") {
+      return {
+        showPayment: true,
+        isLifeApplication: false,
+        amount,
+        years,
+        chosenType,
+        newExpiry,
+        upiVpa,
+        membershipId,
+      };
+    }
 
   const result = await query(
     `INSERT INTO member_requests
@@ -310,7 +337,68 @@ export default function RenewMembership({ loaderData }: Route.ComponentProps) {
       </PageShell>
     );
   }
+  // Step 1 submit: show QR and ask user to confirm payment before creating the request
+    if (actionData && "showPayment" in actionData && actionData.showPayment) {
+      const { amount, years, upiVpa: vpa, membershipId, chosenType, isLifeApplication } = actionData;
+      const upiLink = `upi://pay?pa=${encodeURIComponent(vpa)}&pn=PAI&am=${amount}&cu=INR&tn=${encodeURIComponent(`Renewal ${membershipId}`)}`;
+      const typeLabel = isLifeApplication ? "Life Membership" : (MEMBERSHIP_TYPE_CONFIG.find((t) => t.value ===
+  chosenType)?.label ?? chosenType);
 
+      return (
+        <PageShell member={member}>
+          <div className="max-w-lg mx-auto">
+            <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm text-center">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                Scan to Pay via UPI
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-5">
+                Amount ₹{amount.toLocaleString("en-IN")} is pre-filled in the QR
+              </p>
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-white rounded-xl border border-gray-200 dark:border-gray-700 inline-block">
+                  <QRCodeCanvas id="pai-renewal-qr" value={upiLink} size={200} level="M" includeMargin={true} />
+                </div>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1.5 mb-5 text-left bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                <div className="flex justify-between">
+                  <span>UPI ID</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{vpa}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Amount</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{amount.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Note</span>
+                  <span className="font-medium text-gray-900 dark:text-white">Renewal {membershipId}</span>
+                </div>
+              </div>
+              <button type="button" onClick={handleDownloadQR} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download QR
+              </button>
+            </div>
+
+            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+              {typeLabel}{!isLifeApplication && <> &middot; {years} Yr{years > 1 ? "s" :
+  ""}</>}&nbsp;&middot;&nbsp;₹{amount.toLocaleString("en-IN")}
+            </p>
+
+            <Form method="post" className="mt-4">
+              <input type="hidden" name="step" value="confirm" />
+              <input type="hidden" name="renewal_type" value={isLifeApplication ? "life" : "annual"} />
+              {!isLifeApplication && <input type="hidden" name="years" value={years} />}
+              {!isLifeApplication && <input type="hidden" name="membership_type" value={chosenType} />}
+              <button type="submit" className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition text-sm font-medium">
+                I've Completed the Payment
+              </button>
+            </Form>
+          </div>
+        </PageShell>
+      );
+    }
   // Post-submit: show QR payment screen
   if (actionData && "submitted" in actionData && actionData.submitted) {
     const { requestId, amount, years, newExpiry, upiVpa: vpa, membershipId, chosenType, isLifeApplication } = actionData;
@@ -394,7 +482,7 @@ export default function RenewMembership({ loaderData }: Route.ComponentProps) {
           )}
 
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-            Admin will verify payment and activate within 48 hours.{" "}
+            Send your payment screenshot to admin to get renewed within 48 hours.{" "}
             <a href="/my-requests" className="text-sky-600 dark:text-sky-400 hover:underline">
               Track status at My Requests.
             </a>

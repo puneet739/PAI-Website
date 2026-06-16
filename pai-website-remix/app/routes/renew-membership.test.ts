@@ -64,6 +64,7 @@ describe('Renew Membership - Async Email Sending', () => {
       formData.append('renewal_type', 'annual');
       formData.append('years', '1');
       formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -101,6 +102,7 @@ describe('Renew Membership - Async Email Sending', () => {
       formData.append('renewal_type', 'annual');
       formData.append('years', '1');
       formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -128,6 +130,7 @@ describe('Renew Membership - Async Email Sending', () => {
       formData.append('renewal_type', 'annual');
       formData.append('years', '1');
       formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -168,6 +171,7 @@ describe('Renew Membership - Async Email Sending', () => {
       formData.append('renewal_type', 'annual');
       formData.append('years', '1');
       formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -187,6 +191,32 @@ describe('Renew Membership - Async Email Sending', () => {
       const insertCall = mockQuery.mock.calls[1];
       expect(insertCall[0]).toContain('INSERT INTO member_requests');
       expect(insertCall[0]).toContain('membership_renewal');
+    });
+  });
+
+  describe('Review Step (no DB write yet)', () => {
+    it('should not insert or email on the review step', async () => {
+      mockQuery.mockResolvedValueOnce([]); // duplicate check only
+
+      const { action } = await import('./renew-membership');
+
+      const formData = new URLSearchParams();
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '2');
+      formData.append('membership_type', 'individual');
+      // no step field -> defaults to "review"
+
+      const request = new Request('http://localhost/renew-membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+
+      const result = await action({ request, params: {}, context: {} } as any);
+
+      expect(result).toMatchObject({ showPayment: true, years: 2 });
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -252,6 +282,7 @@ describe('Renew Membership - Async Email Sending', () => {
       formData.append('renewal_type', 'annual');
       formData.append('years', '1');
       formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
       // No details field
 
       const request = new Request('http://localhost/renew-membership', {
