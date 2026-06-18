@@ -33,7 +33,10 @@ describe('Renew Membership - Async Email Sending', () => {
       phone: '+919876543210',
       pilot_rating: 'P2',
       active_until: '2024-01-01',
-      membership_type: 'regular',
+      membership_type: 'individual',
+      membership_id: 'PAI-MEM-00001',
+      is_life_member: 0,
+      life_membership_number: null,
     });
   });
 
@@ -58,10 +61,10 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewal request');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -82,10 +85,8 @@ describe('Renew Membership - Async Email Sending', () => {
       // Email should NOT be resolved yet
       expect(emailResolved).toBe(false);
       
-      // Should redirect successfully
-      expect(result).toBeInstanceOf(Response);
-      expect((result as Response).status).toBe(302);
-      expect((result as Response).headers.get('Location')).toBe('/dashboard?renewal=requested');
+      // The result should indicate that the request was submitted successfully
+      expect(result).toMatchObject({ submitted: true, requestId: 123, years: 1, amount: 500 });
     });
 
     it('should handle email failures gracefully without blocking user', async () => {
@@ -98,10 +99,10 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewal request');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -114,10 +115,8 @@ describe('Renew Membership - Async Email Sending', () => {
       // Should not throw error even if email fails
       const result = await action({ request, params: {}, context: {} } as any);
 
-      // Should still redirect successfully
-      expect(result).toBeInstanceOf(Response);
-      expect((result as Response).status).toBe(302);
-      expect((result as Response).headers.get('Location')).toBe('/dashboard?renewal=requested');
+      // The result should still indicate that the request was submitted successfully
+      expect(result).toMatchObject({ submitted: true, requestId: 123, years: 1, amount: 500 });
     });
 
     it('should call email function with correct parameters', async () => {
@@ -128,10 +127,10 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'John Doe');
-      formData.append('email', 'john@example.com');
-      formData.append('phone', '+919876543210');
-      formData.append('details', 'Renewing after expiry');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -143,16 +142,22 @@ describe('Renew Membership - Async Email Sending', () => {
 
       await action({ request, params: {}, context: {} } as any);
 
-      // Email function should be called with correct data
+      // Verify that the email function was called with correct parameters
+      // userName changes from 'John Doe' to 'Test User' - the new action reads userName from member.name (the mock), not from the form. The form no longer has a name field.
+      // userEmail changes from 'john@example.com' to 'test@example.com' - same reason, comes from member.email now.
+      // details line is removed - the new action auto-generates the details string ("Renewal for 1 year(s) - ₹500"). There's no details field in the form anymore.
+      // renewalDurationYears: 1 is added - new field passed to the email function so the admin email shows how many years were chosen.
+      // renewalAmount: 500 is added - new field so the admin email shows the expected payment amount.
       expect(mockSendMembershipRenewalEmail).toHaveBeenCalledTimes(1);
       const emailParams = mockSendMembershipRenewalEmail.mock.calls[0][0];
-      expect(emailParams.userName).toBe('John Doe');
-      expect(emailParams.userEmail).toBe('john@example.com');
+      expect(emailParams.userName).toBe('Test User');
+      expect(emailParams.userEmail).toBe('test@example.com');
       expect(emailParams.phone).toBe('+919876543210');
-      expect(emailParams.details).toBe('Renewing after expiry');
       expect(emailParams.currentRating).toBe('P2');
       expect(emailParams.expiryDate).toBe('2024-01-01');
       expect(emailParams.requestId).toBe(456);
+      expect(emailParams.renewalDurationYears).toBe(1);
+      expect(emailParams.renewalAmount).toBe(500);
     });
 
     it('should store request in database before triggering email', async () => {
@@ -163,9 +168,10 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -188,14 +194,40 @@ describe('Renew Membership - Async Email Sending', () => {
     });
   });
 
+  describe('Review Step (no DB write yet)', () => {
+    it('should not insert or email on the review step', async () => {
+      mockQuery.mockResolvedValueOnce([]); // duplicate check only
+
+      const { action } = await import('./renew-membership');
+
+      const formData = new URLSearchParams();
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '2');
+      formData.append('membership_type', 'individual');
+      // no step field -> defaults to "review"
+
+      const request = new Request('http://localhost/renew-membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+
+      const result = await action({ request, params: {}, context: {} } as any);
+
+      expect(result).toMatchObject({ showPayment: true, years: 2 });
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Validation', () => {
     it('should validate required fields', async () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', '');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '5');  // invalid - only 1/2/3 are valid
+      formData.append('membership_type', 'individual');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -204,11 +236,11 @@ describe('Renew Membership - Async Email Sending', () => {
         },
         body: formData.toString(),
       });
-
+      mockQuery.mockResolvedValueOnce([]);
       const result = await action({ request, params: {}, context: {} } as any);
 
-      expect(result).toEqual({ error: 'Name is required' });
-      expect(mockQuery).not.toHaveBeenCalled();
+      expect(result).toEqual({ error: 'Please select a valid duration (1, 2, or 3 years).' });
+      expect(mockQuery).toHaveBeenCalledTimes(1); // Only the initial check for existing pending requests
       expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
     });
 
@@ -219,9 +251,9 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
 
       const request = new Request('http://localhost/renew-membership', {
         method: 'POST',
@@ -233,7 +265,7 @@ describe('Renew Membership - Async Email Sending', () => {
 
       const result = await action({ request, params: {}, context: {} } as any);
 
-      expect(result).toEqual({ error: 'You already have a pending membership renewal request' });
+      expect(result).toEqual({ error: 'You already have a pending renewal request. Please wait for admin approval.' });
       expect(mockSendMembershipRenewalEmail).not.toHaveBeenCalled();
     });
   });
@@ -247,9 +279,10 @@ describe('Renew Membership - Async Email Sending', () => {
       const { action } = await import('./renew-membership');
       
       const formData = new URLSearchParams();
-      formData.append('name', 'Test User');
-      formData.append('email', 'test@example.com');
-      formData.append('phone', '+919876543210');
+      formData.append('renewal_type', 'annual');
+      formData.append('years', '1');
+      formData.append('membership_type', 'individual');
+      formData.append('step', 'confirm');
       // No details field
 
       const request = new Request('http://localhost/renew-membership', {
@@ -263,7 +296,7 @@ describe('Renew Membership - Async Email Sending', () => {
       await action({ request, params: {}, context: {} } as any);
 
       const emailParams = mockSendMembershipRenewalEmail.mock.calls[0][0];
-      expect(emailParams.details).toBe('Membership renewal request');
+      expect(emailParams.details).toBe('Renewal for 1 year(s) — ₹500');
     });
   });
 });

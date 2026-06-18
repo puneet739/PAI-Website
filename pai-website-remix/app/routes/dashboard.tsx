@@ -114,15 +114,25 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
         <main className="p-4 sm:p-6 lg:p-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {member.name}!
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Here's your PAI member overview
-            <br />
-            To make any change to your profile, send a mail to support@pgaoi.org
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Welcome back, {member.name}!
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Here's your PAI member overview
+              <br />
+              To make any change to your profile, send a mail to support@pgaoi.org
+            </p>
+          </div>
+          {member.is_life_member !== 1 && member.active_until && (
+            <a
+              href="/renew-membership"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500 text-white text-sm font-medium shadow hover:bg-orange-600 transition whitespace-nowrap"
+            >
+              Renew Membership
+            </a>
+          )}
         </div>
 
         {/* Success Messages */}
@@ -245,6 +255,34 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
         )}
+
+        {/* Expiry warning — shown within 60 days of expiry and after expiry, until renewed */}
+        {(() => {
+          if (member.is_life_member === 1 || !member.active_until) return null;
+          const days = Math.ceil((new Date(member.active_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          if (days > 60) return null;
+          const message = days < 0
+            ? <>Your membership <strong>expired on {expiryDate}</strong>. Please renew to continue access.</>
+            : <>Your membership expires in <strong>{days} day{days !== 1 ? 's' : ''}</strong> ({expiryDate})</>;
+          return (
+            <div className="mb-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">{message}</p>
+                </div>
+                <a
+                  href="/renew-membership"
+                  className="text-sm font-semibold text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition whitespace-nowrap"
+                >
+                  Renew Now →
+                </a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
@@ -452,7 +490,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                         : member.membership_status.charAt(0).toUpperCase() + member.membership_status.slice(1)
                       }
                     </span>
-                    {isExpired && (
+                    {(isExpired || member.membership_status === 'active') && member.is_life_member !== 1 && (
                       <a
                         href="/renew-membership"
                         className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30 transition font-medium"

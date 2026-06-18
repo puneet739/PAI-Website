@@ -600,3 +600,77 @@ export async function sendMembershipRenewalEmail(data: MembershipRenewalEmail) {
     console.error("Error sending membership renewal emails:", error);
   }
 }
+
+// ── Renewal reminder emails (sent by the daily cron job) ─────────────────────
+
+interface RenewalReminderParams {
+  userName: string;
+  userEmail: string;
+  expiryDate: string;
+  membershipType: string;
+  renewLink: string;
+}
+
+async function sendRenewalReminderEmail(
+  params: RenewalReminderParams,
+  subject: string,
+  bodyHtml: string
+): Promise<void> {
+  if (!isEmailEnabled()) return;
+  await sendEmail({ to: params.userEmail, subject, html: bodyHtml });
+}
+
+function renewalReminderHtml(params: RenewalReminderParams, message: string): string {
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <h2 style="color:#0ea5e9">PAI Membership Reminder</h2>
+      <p>Dear ${params.userName},</p>
+      <p>${message}</p>
+      <p><strong>Expiry date:</strong> ${params.expiryDate}<br/>
+         <strong>Membership type:</strong> ${params.membershipType}</p>
+      <a href="${params.renewLink}" style="display:inline-block;margin-top:16px;padding:10px 24px;background:#f97316;color:#fff;border-radius:24px;text-decoration:none;font-weight:600">
+        Renew Now
+      </a>
+      <p style="margin-top:24px;font-size:12px;color:#6b7280">PAI — Paragliding Association of India</p>
+    </div>`;
+}
+
+export async function sendRenewalReminder15DaysBefore(params: RenewalReminderParams): Promise<void> {
+  await sendRenewalReminderEmail(
+    params,
+    "PAI Membership Expiring in 15 Days",
+    renewalReminderHtml(params, "Your PAI membership expires in <strong>15 days</strong>. Renew now to avoid any interruption in access.")
+  );
+}
+
+export async function sendRenewalReminder2DaysBefore(params: RenewalReminderParams): Promise<void> {
+  await sendRenewalReminderEmail(
+    params,
+    "PAI Membership Expiring in 2 Days",
+    renewalReminderHtml(params, "Your PAI membership expires in <strong>2 days</strong>. Please renew immediately to continue access.")
+  );
+}
+
+export async function sendRenewalReminder3DaysAfter(params: RenewalReminderParams): Promise<void> {
+  await sendRenewalReminderEmail(
+    params,
+    "PAI Membership Expired — Renew Now",
+    renewalReminderHtml(params, "Your PAI membership expired <strong>3 days ago</strong>. Renew to regain full access.")
+  );
+}
+
+export async function sendRenewalReminder15DaysAfter(params: RenewalReminderParams): Promise<void> {
+  await sendRenewalReminderEmail(
+    params,
+    "PAI Membership Expired 15 Days Ago",
+    renewalReminderHtml(params, "Your PAI membership expired <strong>15 days ago</strong>. Renew to avoid losing your membership status.")
+  );
+}
+
+export async function sendRenewalReminder30DaysAfter(params: RenewalReminderParams): Promise<void> {
+  await sendRenewalReminderEmail(
+    params,
+    "Final Reminder — PAI Membership Expired",
+    renewalReminderHtml(params, "This is a final reminder. Your PAI membership expired <strong>30 days ago</strong>. Please renew to keep your membership active.")
+  );
+}

@@ -16,3 +16,7 @@ states/
 node_modules
 
 *.csv
+
+# For my reference 
+plans/
+notes/

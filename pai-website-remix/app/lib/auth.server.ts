@@ -14,7 +14,9 @@ export interface Member {
   profile_image: string | null;
   role_id: number;
   role_name?: string;
-  membership_type: "basic" | "premium" | "instructor" | "life";
+  membership_type: "individual" | "school_club";
+  is_life_member: number;
+  life_membership_number: number | null;
   membership_status: "active" | "inactive" | "pending";
   active_until: string | null;
   pilot_rating: string;
@@ -32,9 +34,9 @@ interface MemberWithPassword extends Member {
 export async function verifyLogin(email: string, password: string): Promise<Member | null> {
   const member = await queryOne<MemberWithPassword>(
     `SELECT m.id, m.membership_id, m.email, m.password_hash, m.name, m.phone, m.address, 
-     m.blood_group, m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
+     m.blood_group, m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name, m.is_life_member, m.life_membership_number,
      m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
-     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at  
      FROM members m 
      LEFT JOIN roles r ON m.role_id = r.id 
      WHERE m.email = ?`,
@@ -59,9 +61,9 @@ export async function verifyLogin(email: string, password: string): Promise<Memb
 export async function getMemberById(id: number): Promise<Member | null> {
   return queryOne<Member>(
     `SELECT m.id, m.membership_id, m.email, m.name, m.phone, m.address, m.blood_group, 
-     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
+     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name, m.is_life_member, m.life_membership_number,
      m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
-     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at
      FROM members m 
      LEFT JOIN roles r ON m.role_id = r.id 
      WHERE m.id = ?`,
@@ -73,9 +75,9 @@ export async function getMemberById(id: number): Promise<Member | null> {
 export async function getMemberByEmail(email: string): Promise<Member | null> {
   return queryOne<Member>(
     `SELECT m.id, m.membership_id, m.email, m.name, m.phone, m.address, m.blood_group, 
-     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name,
+     m.gender, m.date_of_birth, m.profile_image, m.role_id, r.name as role_name, m.is_life_member, m.life_membership_number,
      m.membership_type, m.membership_status, m.active_until, m.pilot_rating, 
-     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at 
+     m.total_flights, m.total_flight_hours, m.created_at, m.updated_at
      FROM members m 
      LEFT JOIN roles r ON m.role_id = r.id 
      WHERE m.email = ?`,
