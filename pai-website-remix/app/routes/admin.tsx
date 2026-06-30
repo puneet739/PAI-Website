@@ -109,8 +109,8 @@ export async function action({ request }: Route.ActionArgs) {
   const status = action === "approve" ? "approved" : "rejected";
 
   // Get the request details to check type and member_id
-  const requestDetails = await query<{ member_id: number; request_type: string }>(
-    "SELECT member_id, request_type FROM member_requests WHERE id = ?",
+  const requestDetails = await query<{ member_id: number; request_type: string; renewal_membership_type: string | null; renewal_duration_years: number | null }>(
+    "SELECT member_id, request_type, renewal_membership_type, renewal_duration_years FROM member_requests WHERE id = ?",
     [requestId]
   );
 
@@ -118,7 +118,7 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "Request not found" };
   }
 
-  const { member_id, request_type } = requestDetails[0];
+  const { member_id, request_type, renewal_membership_type, renewal_duration_years } = requestDetails[0];
 
   // Update request status
   await query(
@@ -170,16 +170,57 @@ export async function action({ request }: Route.ActionArgs) {
         [member_id, userId, actor?.name || "Unknown", "approve_new_membership", JSON.stringify(changes)]
       );
     } else if (request_type === "membership_renewal") {
+      if (renewal_membership_type === "life") {
+        const beforeLifeRows = await query<{ membership_status: string; is_life_member: number; life_membership_number: number | null }>(
+          "SELECT membership_status, is_life_member, life_membership_number FROM members WHERE id = ?",
+          [member_id]
+        );
+        const beforeLife = beforeLifeRows[0] || null;
+
+        const nextNumRows = await query<{ next_num: number }>(
+          "SELECT COALESCE(MAX(life_membership_number), 0) + 1 AS next_num FROM members WHERE is_life_member = 1"
+        );
+        const nextNum = nextNumRows[0]?.next_num ?? 1;
+
+        await query(
+          "UPDATE members SET is_life_member = 1, life_membership_number = ?, membership_status = 'active', active_until = NULL WHERE id = ?",
+          [nextNum, member_id]
+        );
+
+        const afterLifeRows = await query<{ membership_status: string; is_life_member: number; life_membership_number: number | null }>(
+          "SELECT membership_status, is_life_member, life_membership_number FROM members WHERE id = ?",
+          [member_id]
+        );
+        const afterLife = afterLifeRows[0] || null;
+
+        const lifeChanges: any = {};
+        if (beforeLife && afterLife) {
+          if (beforeLife.is_life_member !== afterLife.is_life_member) {
+            lifeChanges.is_life_member = { old: beforeLife.is_life_member, new: afterLife.is_life_member };
+          }
+          if (beforeLife.life_membership_number !== afterLife.life_membership_number) {
+            lifeChanges.life_membership_number = { old: beforeLife.life_membership_number, new: afterLife.life_membership_number };
+          }
+          if (beforeLife.membership_status !== afterLife.membership_status) {
+            lifeChanges.membership_status = { old: beforeLife.membership_status, new: afterLife.membership_status };
+          }
+        }
+
+        await query(
+          "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+          [member_id, userId, actor?.name || "Unknown", "approve_life_membership", JSON.stringify(lifeChanges)]
+        );
+      } else {
       const beforeRows = await query<{ membership_status: string; active_until: any }>(
         "SELECT membership_status, active_until FROM members WHERE id = ?",
         [member_id]
       );
       const before = beforeRows[0] || null;
 
-      // Renew membership for 1 year from current date
+      const years = renewal_duration_years && renewal_duration_years > 0 ? renewal_duration_years : 1;
       await query(
-        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
-        [member_id]
+        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(GREATEST(CURDATE(), COALESCE(active_until, CURDATE())), INTERVAL ? YEAR) WHERE id = ?",
+        [years, member_id]
       );
 
       const afterRows = await query<{ membership_status: string; active_until: any }>(
@@ -204,6 +245,7 @@ export async function action({ request }: Route.ActionArgs) {
         "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
         [member_id, userId, actor?.name || "Unknown", "approve_membership_renewal", JSON.stringify(changes)]
       );
+      }
     } else if (request_type === "insurance") {
       // Get insurance details from the request
       const insuranceDetails = await query<{ insurance_type: string; coverage_amount: number }>(
