@@ -583,9 +583,8 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           required
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         >
-                          <option value="basic">Basic</option>
-                          <option value="premium">Premium</option>
-                          <option value="instructor">Instructor</option>
+                          <option value="individual">Individual</option>
+                          <option value="school_club">School / Club</option>
                         </select>
                       </div>
 
