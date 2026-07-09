@@ -16,8 +16,9 @@ export const links: Route.LinksFunction = () => [];
 export async function loader() {
   // Initialize workflows on server startup
   if (typeof window === 'undefined') {
-    const { initializeWorkflows } = await import("./lib/workflow.server");
+    const { initializeWorkflows, initializeRenewalReminderWorkflow } = await import("./lib/workflow.server");
     await initializeWorkflows();
+    await initializeRenewalReminderWorkflow();
   }
   return null;
 }
