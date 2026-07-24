@@ -327,6 +327,23 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
     return values.map((v) => getRatingLabel(v)).join(', ');
   };
 
+  // Downloads the member QR
+  const handleDownloadQr = async (url: string, filename: string) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  // Same QR data formula as generate-card.tsx, computed for the selected member.
+  const membershipId = selectedUser ? (selectedUser.membership_id || `PAI-MEM-${String(selectedUser.id).padStart(5, '0')}`) : '';
+  const qrCodeData = membershipId ? `${typeof window !== 'undefined' ? window.location.origin : 'https://portal.paraglidingassociationofindia.org'}/verify-pilot?membershipid=${membershipId}` : '';
+  const qrImageUrl = qrCodeData ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrCodeData)}` : '';
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar currentPath="/manage-users" userRole={member.role_name} />
@@ -786,6 +803,21 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                       {userInsurance ? 'Update Insurance Policy' : 'Create Insurance Policy'}
                     </button>
                   </Form>
+                </div>
+
+                {/* Member QR Code */}
+                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    Member QR Code
+                  </h2>
+                  <img src={qrImageUrl} alt="QR Code" className="w-[160px] h-[160px]" />
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadQr(qrImageUrl, `PAI-QR-${membershipId}.png`)}
+                    className="mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white hover:opacity-95 transition font-medium"
+                  >
+                    Download QR
+                  </button>
                 </div>
 
                 {/* Recent Changes for this user */}
