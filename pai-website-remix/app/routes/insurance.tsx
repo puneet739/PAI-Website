@@ -1,9 +1,12 @@
 import type { Route } from "./+types/insurance";
 import { Form, redirect, useActionData } from "react-router";
+import { useState } from "react";
 import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
+
+const CARE_PORTAL_TOKEN = "R1hna3hrSTFabVlRTnFqbEtpV0p6dz09Ojoh1aq0wOIgrqsvmk6D1SJA";
 
 interface InsurancePolicy {
   id: number;
@@ -144,6 +147,15 @@ export function meta({}: Route.MetaArgs) {
 export default function Insurance({ loaderData, actionData }: Route.ComponentProps) {
   const { member, policies, activePolicy } = loaderData;
 
+  const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
+
+  const cleanedMobile = member.phone ? member.phone.replace(/\D/g, "").slice(-10) : "";
+  const isMobileValid = /^\d{10}$/.test(cleanedMobile);
+  const isEmailValid = !!member.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email);
+  const carePortalUrl = isMobileValid && isEmailValid
+    ? `https://partners.careinsurance.com/portals/asego/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${btoa(cleanedMobile)}&email=${btoa(member.email)}`
+    : null;
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -185,13 +197,34 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
         <main className="p-8">
         {/* Page Title */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Paragliding Insurance
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Protect yourself with comprehensive paragliding insurance coverage
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Paragliding Insurance
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Protect yourself with comprehensive paragliding insurance coverage
+            </p>
+          </div>
+
+          {carePortalUrl ? (
+            <a
+              href={carePortalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 flex items-center justify-center py-2.5 px-5 rounded-full border border-sky-500 text-sky-600 dark:text-sky-400 font-medium hover:bg-sky-50 dark:hover:bg-sky-900/20 transition"
+            >
+              Book Directly
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDirectBookingModal(true)}
+              className="flex-shrink-0 flex items-center justify-center py-2.5 px-5 rounded-full border border-sky-500 text-sky-600 dark:text-sky-400 font-medium hover:bg-sky-50 dark:hover:bg-sky-900/20 transition"
+            >
+              Book Directly
+            </button>
+          )}
         </div>
 
         {actionData?.error && (
@@ -302,7 +335,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm sticky top-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Request Insurance</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Fill out the form below to request insurance coverage</p>
-              
+
               <Form method="post" className="space-y-4">
                 <input type="hidden" name="_action" value="request_insurance" />
                 
@@ -462,6 +495,164 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
           </div>
         </div>
         </main>
+      </div>
+
+      <InsuranceDirectBookingModal
+        isOpen={showDirectBookingModal}
+        onClose={() => setShowDirectBookingModal(false)}
+        defaultMobile={isMobileValid ? cleanedMobile : ""}
+        defaultEmail={isEmailValid ? member.email : ""}
+      />
+    </div>
+  );
+}
+
+interface InsuranceDirectBookingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultMobile?: string;
+  defaultEmail?: string;
+}
+
+function InsuranceDirectBookingModal({ isOpen, onClose, defaultMobile = "", defaultEmail = "" }: InsuranceDirectBookingModalProps) {
+  const [mobile, setMobile] = useState(defaultMobile);
+  const [email, setEmail] = useState(defaultEmail);
+  const [errors, setErrors] = useState<{ mobile?: string; email?: string }>({});
+  const [popupBlockedUrl, setPopupBlockedUrl] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!/^\d{10}$/.test(mobile.trim())) e.mobile = "Enter a valid 10-digit mobile number.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = "Enter a valid email address.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleClose = () => {
+    setErrors({});
+    setPopupBlockedUrl(null);
+    onClose();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const url = `https://partners.careinsurance.com/portals/asego/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${btoa(mobile.trim())}&email=${btoa(email.trim())}`;
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (!opened) {
+      setPopupBlockedUrl(url);
+      return;
+    }
+
+    handleClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl w-full max-w-md p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Book Insurance Directly</h3>
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            ✕
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Enter your details to continue to the CARE Insurance booking portal.
+        </p>
+
+        {popupBlockedUrl && (
+          <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Your browser blocked the popup.{" "}
+              <a
+                href={popupBlockedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium"
+                onClick={handleClose}
+              >
+                Click here to continue
+              </a>
+              .
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <div>
+            <label htmlFor="direct-mobile" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Mobile Number
+            </label>
+            <input
+              id="direct-mobile"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={mobile}
+              onChange={(e) => {
+                setMobile(e.target.value.replace(/\D/g, ""));
+                setErrors((prev) => ({ ...prev, mobile: undefined }));
+              }}
+              placeholder="10-digit mobile number"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white ${
+                errors.mobile ? "border-red-400" : "border-gray-300 dark:border-gray-700"
+              }`}
+            />
+            {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="direct-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Email Address
+            </label>
+            <input
+              id="direct-email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+              placeholder="you@example.com"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white ${
+                errors.email ? "border-red-400" : "border-gray-300 dark:border-gray-700"
+              }`}
+            />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-sky-500 to-orange-500 text-white text-sm font-semibold hover:opacity-95 transition"
+            >
+              Proceed to Portal
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

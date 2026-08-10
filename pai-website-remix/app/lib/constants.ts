@@ -6,8 +6,8 @@ export interface MembershipTypeConfig {
   annualRate: number;
 }
 
-export const MAX_LIFE_MEMBERSHIPS = 100;
-export const LIFE_MEMBERSHIP_FEE = 5000;
+export const MAX_LIFE_MEMBERSHIPS = 25;
+export const LIFE_MEMBERSHIP_FEE = 7900;
 
 // Add new membership types here — pricing and forms pick up automatically
 export const MEMBERSHIP_TYPE_CONFIG: MembershipTypeConfig[] = [
