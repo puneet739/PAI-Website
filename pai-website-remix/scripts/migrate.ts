@@ -148,6 +148,36 @@ async function run() {
     } catch (err: any) {
       console.error("Failed (migration 10):", err.message);
     }
+
+  // Migration 11: rating_valid_until on members + rating_renewal request type
+  const col6 = await columnExists(conn, "members", "rating_valid_until", db);
+  try {
+    if (!col6) {
+      await conn.execute(`ALTER TABLE members ADD COLUMN rating_valid_until DATE NULL`);
+      console.log("Applied: Add rating_valid_until to members");
+
+      await conn.execute(
+        `ALTER TABLE member_requests MODIFY COLUMN request_type
+         ENUM('new_membership','insurance','rating_upgrade','membership_renewal','rating_renewal') NOT NULL`
+      );
+      console.log("Applied: Added rating_renewal to member_requests.request_type");
+
+      await conn.execute(
+        `UPDATE members SET rating_valid_until = '2099-12-31'
+         WHERE pilot_rating IS NULL OR pilot_rating NOT REGEXP 'P(7|8|9|10)|PPG(5|6|7)|SCHOOL|CLUB'`
+      );
+      await conn.execute(
+        `UPDATE members SET rating_valid_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
+         WHERE pilot_rating REGEXP 'P(7|8|9|10)|PPG(5|6|7)|SCHOOL|CLUB'`
+      );
+      console.log("Applied: Backfilled rating_valid_until for existing members");
+    } else {
+      console.log("Already applied: rating_valid_until already exists");
+    }
+  } catch (err: any) {
+    console.error("Failed (migration 11):", err.message);
+  }
+
   await conn.end();
   console.log("\nDone.");
 }

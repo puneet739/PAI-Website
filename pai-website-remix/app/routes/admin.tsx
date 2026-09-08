@@ -2,6 +2,7 @@ import type { Route } from "./+types/admin";
 import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState } from "react";
+import { getRatingRenewalRate, calculateNewExpiry } from "~/lib/constants";
 
 interface MemberRequest {
   id: number;
@@ -302,10 +303,13 @@ export async function action({ request }: Route.ActionArgs) {
         );
         const before = beforeRows[0] || null;
 
-        // Update member's pilot rating
+        // Update member's pilot rating, resyncing rating_valid_until the same way the renewal migration backfill does (validity follows the rating held)
+        const newRatingValidUntil = getRatingRenewalRate(requested_rating) > 0
+          ? calculateNewExpiry(null, 1)
+          : '2099-12-31';
         await query(
-          "UPDATE members SET pilot_rating = ? WHERE id = ?",
-          [requested_rating, member_id]
+          "UPDATE members SET pilot_rating = ?, rating_valid_until = ? WHERE id = ?",
+          [requested_rating, newRatingValidUntil, member_id]
         );
 
         const afterRows = await query<{ pilot_rating: string }>(
@@ -324,6 +328,38 @@ export async function action({ request }: Route.ActionArgs) {
           [member_id, userId, actor?.name || "Unknown", "approve_rating_upgrade", JSON.stringify(changes)]
         );
       }
+    } else if (request_type === "rating_renewal") {
+      const beforeRows = await query<{ rating_valid_until: any }>(
+        "SELECT rating_valid_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const before = beforeRows[0] || null;
+
+      const years = renewal_duration_years && renewal_duration_years > 0 ? renewal_duration_years : 1;
+      await query(
+        "UPDATE members SET rating_valid_until = DATE_ADD(GREATEST(CURDATE(), COALESCE(rating_valid_until, CURDATE())), INTERVAL ? YEAR) WHERE id = ?",
+        [years, member_id]
+      );
+
+      const afterRows = await query<{ rating_valid_until: any }>(
+        "SELECT rating_valid_until FROM members WHERE id = ?",
+        [member_id]
+      );
+      const after = afterRows[0] || null;
+
+      const changes: any = {};
+      if (before && after) {
+        const o = before.rating_valid_until instanceof Date ? before.rating_valid_until.toISOString().slice(0,10) : before.rating_valid_until;
+        const n = after.rating_valid_until instanceof Date ? after.rating_valid_until.toISOString().slice(0,10) : after.rating_valid_until;
+        if (o !== n) {
+          changes.rating_valid_until = { old: before.rating_valid_until, new: after.rating_valid_until };
+        }
+      }
+
+      await query(
+        "INSERT INTO audit_logs (member_id, actor_id, actor_name, action, changes) VALUES (?, ?, ?, ?, ?)",
+        [member_id, userId, actor?.name || "Unknown", "approve_rating_renewal", JSON.stringify(changes)]
+      );
     }
   }
 
@@ -382,6 +418,10 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200';
       case 'renewal':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200';
+      case 'membership_renewal':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200';
+      case 'rating_renewal':
+        return 'bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
     }
@@ -397,6 +437,10 @@ export default function Admin({ loaderData }: Route.ComponentProps) {
         return 'Rating Upgrade';
       case 'renewal':
         return 'Renewal';
+      case 'membership_renewal':
+        return 'Membership Renewal';
+      case 'rating_renewal':
+        return 'Rating Renewal';
       default:
         return type;
     }
