@@ -1,7 +1,7 @@
 import type { Route } from "./+types/dashboard";
 import { redirect } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
-import { getRatingLabel } from "~/lib/constants";
+import { getRatingLabel, getRatingRenewalRate } from "~/lib/constants";
 import { requireUserId, updateSessionActivity } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
@@ -71,6 +71,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const isExpired = member.active_until && new Date(member.active_until) < new Date();
   const expiryDate = member.active_until ? new Date(member.active_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
 
+  // Check if pilot rating is expired
+  const isRatingExpired = member.rating_valid_until && new Date(member.rating_valid_until) < new Date();
+  const ratingExpiryDate = member.rating_valid_until ? new Date(member.rating_valid_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+
   const getMembershipBadgeColor = (type: string) => {
     switch (type) {
       case "instructor":
@@ -125,14 +129,24 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
               To make any change to your profile, send a mail to support@pgaoi.org
             </p>
           </div>
-          {member.is_life_member !== 1 && member.active_until && (
-            <a
-              href="/renew-membership"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500 text-white text-sm font-medium shadow hover:bg-orange-600 transition whitespace-nowrap"
-            >
-              Renew Membership
-            </a>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {member.is_life_member !== 1 && member.active_until && (
+              <a
+                href="/renew-membership"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500 text-white text-sm font-medium shadow hover:bg-orange-600 transition whitespace-nowrap"
+              >
+                Renew Membership
+              </a>
+            )}
+            {getRatingRenewalRate(member.pilot_rating) > 0 && (
+              <a
+                href="/renew-rating"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-sky-500 text-white text-sm font-medium shadow hover:bg-sky-600 transition whitespace-nowrap"
+              >
+                Renew Rating
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Success Messages */}
@@ -284,6 +298,35 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           );
         })()}
 
+        {/* Rating expiry warning — shown within 60 days of expiry and after expiry, until renewed */}
+        {(() => {
+          if (getRatingRenewalRate(member.pilot_rating) === 0 || !member.rating_valid_until) return null;
+          const ratingDays = Math.ceil((new Date(member.rating_valid_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          if (ratingDays > 60) return null;
+          const ratingExpiryDate = new Date(member.rating_valid_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+          const ratingMessage = ratingDays < 0
+            ? <>Your pilot rating <strong>expired on {ratingExpiryDate}</strong>. Please renew to continue holding this rating.</>
+            : <>Your pilot rating expires in <strong>{ratingDays} day{ratingDays !== 1 ? 's' : ''}</strong> ({ratingExpiryDate})</>;
+          return (
+            <div className="mb-8 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-sky-600 dark:text-sky-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm font-medium text-sky-900 dark:text-sky-200">{ratingMessage}</p>
+                </div>
+                <a
+                  href="/renew-rating"
+                  className="text-sm font-semibold text-sky-800 dark:text-sky-300 hover:text-sky-900 dark:hover:text-sky-100 transition whitespace-nowrap"
+                >
+                  Renew Now →
+                </a>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Inactive Status Alert */}
         {member.membership_status === 'inactive' && (
           <div className="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -348,6 +391,11 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
               </a>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{getRatingLabel(member.pilot_rating)}</p>
+            {getRatingRenewalRate(member.pilot_rating) > 0 && ratingExpiryDate && (
+              <p className={`text-xs mt-1 font-medium ${isRatingExpired ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}>
+                {isRatingExpired ? `Expired on ${ratingExpiryDate}` : `Valid till ${ratingExpiryDate}`}
+              </p>
+            )}
           </div>
         </div>
 

@@ -122,6 +122,50 @@ export function getRatingDescription(value: string | null | undefined): string {
   return rating ? rating.description : '';
 }
 
+// ── Pilot Rating Renewal 
+
+export interface RatingValidityConfig {
+  value: string;
+  annualRate: number; // 0 = permanent, valid to 2099, no renewal needed
+}
+
+export const RATING_VALIDITY_CONFIG: RatingValidityConfig[] = [
+  { value: 'P1', annualRate: 0 },
+  { value: 'P2', annualRate: 0 },
+  { value: 'P3', annualRate: 0 },
+  { value: 'P4', annualRate: 0 },
+  { value: 'P5', annualRate: 0 },
+  { value: 'P6', annualRate: 0 },
+  { value: 'P7', annualRate: 1000 },
+  { value: 'P8', annualRate: 1000 },
+  { value: 'P9', annualRate: 1000 },
+  { value: 'P10', annualRate: 1000 },
+  { value: 'PPG1', annualRate: 0 },
+  { value: 'PPG2', annualRate: 0 },
+  { value: 'PPG3', annualRate: 0 },
+  { value: 'PPG4', annualRate: 0 },
+  { value: 'PPG5', annualRate: 1000 },
+  { value: 'PPG6', annualRate: 1000 },
+  { value: 'PPG7', annualRate: 1000 },
+  { value: 'SCHOOL', annualRate: 0 },
+  { value: 'CLUB', annualRate: 0 },
+];
+
+/**
+ * A member can hold multiple ratings at once (CSV pilot_rating, e.g. "P1,P9").The highest-priced rating they hold governs their renewal fee and expiry.
+ * Returns 0 if every rating they hold is permanent (no renewal needed).
+ */
+export function getRatingRenewalRate(pilotRating: string | null | undefined): number {
+  if (!pilotRating) return 0;
+  const values = pilotRating.split(',').map((v) => v.trim());
+  const rates = values.map((v) => RATING_VALIDITY_CONFIG.find((r) => r.value === v)?.annualRate ?? 0);
+  return Math.max(0, ...rates);
+}
+
+export function getRatingRenewalPrice(pilotRating: string | null | undefined, years: number): number {
+  return getRatingRenewalRate(pilotRating) * years;
+}
+
 // Test Level Constants
 export interface TestLevel {
   level: string;

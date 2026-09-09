@@ -56,6 +56,7 @@ export default function MyRequests({ loaderData }: Route.ComponentProps) {
       membership_renewal: "Membership Renewal",
       insurance: "Insurance Request",
       rating_upgrade: "Rating Upgrade",
+      rating_renewal: "Rating Renewal",
     };
     return labels[type] || type;
   };
@@ -66,6 +67,7 @@ export default function MyRequests({ loaderData }: Route.ComponentProps) {
       membership_renewal: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200",
       insurance: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200",
       rating_upgrade: "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200",
+      rating_renewal: "bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-200",
     };
     return badges[type] || "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200";
   };

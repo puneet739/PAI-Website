@@ -1,7 +1,7 @@
 import type { Route } from "./+types/manage-users";
 import { Form, redirect, useActionData, useLoaderData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
-import { getRatingLabel, PILOT_RATINGS } from "~/lib/constants";
+import { getRatingLabel, PILOT_RATINGS, getRatingRenewalRate, calculateNewExpiry } from "~/lib/constants";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { requireAdminOrInstructor } = await import("~/lib/rbac.server");
@@ -43,10 +43,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Load selected user details
   if (userId_param) {
     const users = await query(
-      `SELECT id, membership_id, name, email, phone, membership_type, membership_status, 
-              active_until, pilot_rating, total_flights, total_flight_hours, 
-              address, blood_group, gender, date_of_birth, created_at 
-       FROM members 
+      `SELECT id, membership_id, name, email, phone, membership_type, membership_status,
+              active_until, pilot_rating, rating_valid_until, total_flights, total_flight_hours,
+              address, blood_group, gender, date_of_birth, created_at
+       FROM members
        WHERE id = ?`,
       [userId_param]
     );
@@ -99,6 +99,7 @@ export async function action({ request }: Route.ActionArgs) {
     const membershipType = formData.get("membershipType");
     const membershipStatus = formData.get("membershipStatus");
     const activeUntil = formData.get("activeUntil");
+    const ratingValidUntilInput = formData.get("ratingValidUntil");
     const membershipId = formData.get("membershipId");
     // Support multiple pilot ratings
     const pilotRatings = formData.getAll("pilotRating");
@@ -107,18 +108,32 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Load existing member to compute changes
     const existingMembers = await query(
-      `SELECT id, membership_id, name, email, phone, address, blood_group, gender, date_of_birth, created_at, membership_type, membership_status, active_until, pilot_rating, total_flights, total_flight_hours 
+      `SELECT id, membership_id, name, email, phone, address, blood_group, gender, date_of_birth, created_at, membership_type, membership_status, active_until, pilot_rating, rating_valid_until, total_flights, total_flight_hours
        FROM members WHERE id = ?`,
       [targetUserId]
     );
 
     const before = existingMembers[0] || null;
 
+    const newPilotRating = (pilotRatings as string[]).join(',') || null;
+    // Rating validity is tied to whichever rating a member currently holds — if the
+    // rating changes here, resync it the same way the renewal migration backfill does.
+    // A manually-entered date always takes precedence over the auto-resync, same as
+    // how "Active Until" is a direct admin override for membership.
+    const ratingChanged = before && before.pilot_rating !== newPilotRating;
+    const autoRatingValidUntil = ratingChanged
+      ? (getRatingRenewalRate(newPilotRating) > 0 ? calculateNewExpiry(null, 1) : '2099-12-31')
+      : null;
+    const newRatingValidUntil = (ratingValidUntilInput && String(ratingValidUntilInput).trim())
+      ? ratingValidUntilInput
+      : autoRatingValidUntil;
+
     await query(
-      `UPDATE members 
-       SET name = ?, email = ?, phone = ?, address = ?, blood_group = ?, 
-           gender = ?, date_of_birth = ?, created_at = ?, membership_type = ?, 
-           membership_status = ?, active_until = ?, pilot_rating = ?, 
+      `UPDATE members
+       SET name = ?, email = ?, phone = ?, address = ?, blood_group = ?,
+           gender = ?, date_of_birth = ?, created_at = ?, membership_type = ?,
+           membership_status = ?, active_until = ?, pilot_rating = ?,
+           rating_valid_until = COALESCE(?, rating_valid_until),
            total_flights = ?, total_flight_hours = ?
        WHERE id = ?`,
       [
@@ -133,7 +148,8 @@ export async function action({ request }: Route.ActionArgs) {
         membershipType,
         membershipStatus,
         activeUntil || null,
-        (pilotRatings as string[]).join(',') || null,
+        newPilotRating,
+        newRatingValidUntil,
         parseInt(totalFlights as string) || 0,
         parseFloat(totalFlightHours as string) || 0,
         targetUserId
@@ -165,6 +181,7 @@ export async function action({ request }: Route.ActionArgs) {
         ["membership_status", membershipStatus],
         ["active_until", activeUntil || null],
         ["pilot_rating", (pilotRatings as string[]).join(',') || null],
+        ["rating_valid_until", newRatingValidUntil],
         ["total_flights", parseInt(totalFlights as string) || 0],
         ["total_flight_hours", parseFloat(totalFlightHours as string) || 0],
       ];
@@ -643,6 +660,21 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                           defaultValue={selectedUser.active_until ? new Date(selectedUser.active_until).toISOString().split('T')[0] : ''}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Rating Valid Until
+                        </label>
+                        <input
+                          type="date"
+                          name="ratingValidUntil"
+                          defaultValue={selectedUser.rating_valid_until ? new Date(selectedUser.rating_valid_until).toISOString().split('T')[0] : ''}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
+                        />
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          Leave as-is to auto-resync when the rating above changes; set it explicitly to override.
+                        </p>
                       </div>
 
                       <div>
