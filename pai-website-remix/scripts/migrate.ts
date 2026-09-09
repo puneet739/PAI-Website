@@ -164,11 +164,11 @@ async function run() {
 
       await conn.execute(
         `UPDATE members SET rating_valid_until = '2099-12-31'
-         WHERE pilot_rating IS NULL OR pilot_rating NOT REGEXP 'P(7|8|9|10)|PPG(5|6|7)|SCHOOL|CLUB'`
+         WHERE pilot_rating IS NULL OR pilot_rating NOT REGEXP 'P(7|8|9|10)|PPG(5|6|7)'`
       );
       await conn.execute(
-        `UPDATE members SET rating_valid_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
-         WHERE pilot_rating REGEXP 'P(7|8|9|10)|PPG(5|6|7)|SCHOOL|CLUB'`
+        `UPDATE members SET rating_valid_until = CURDATE()
+         WHERE pilot_rating REGEXP 'P(7|8|9|10)|PPG(5|6|7)'`
       );
       console.log("Applied: Backfilled rating_valid_until for existing members");
     } else {
