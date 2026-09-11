@@ -149,6 +149,8 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
   const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
 
+  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+
   const cleanedMobile = member.phone ? member.phone.replace(/\D/g, "").slice(-10) : "";
   const isMobileValid = /^\d{10}$/.test(cleanedMobile);
   const isEmailValid = !!member.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email);
@@ -205,9 +207,27 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
             <p className="text-gray-600 dark:text-gray-400">
               Protect yourself with comprehensive paragliding insurance coverage
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+              (Insurance status is displayed on your PAI Membership Card. If it is not updated, please send a copy <br/> of your Insurance Policy to support@pgaoi.org for updating the status on your Membership Card.)
+            </p>
           </div>
 
-          {carePortalUrl ? (
+          {isMembershipExpired ? (
+            <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+              <button
+                type="button"
+                disabled
+                title="Renew your membership to book directly"
+                className="flex items-center justify-center py-2.5 px-5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 font-medium cursor-not-allowed"
+              >
+                Book Directly
+              </button>
+              <p>Renew your membership to unlock insurance booking</p>
+              <a href="/renew-membership" className="text-xs text-sky-600 dark:text-sky-400 hover:underline">
+                Click to renew membership &rarr;
+              </a>
+            </div>
+          ) : carePortalUrl ? (
             <a
               href={carePortalUrl}
               target="_blank"
