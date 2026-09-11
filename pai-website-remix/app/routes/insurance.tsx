@@ -1,12 +1,20 @@
 import type { Route } from "./+types/insurance";
 import { Form, redirect, useActionData } from "react-router";
 import { useState } from "react";
+import CryptoJS from "crypto-js";
 import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 
-const CARE_PORTAL_TOKEN = "R1hna3hrSTFabVlRTnFqbEtpV0p6dz09Ojoh1aq0wOIgrqsvmk6D1SJA";
+const CARE_PORTAL_TOKEN = "aVVpWTN3U3c4cEV0N291S0dNOHpTZz09OjpZc7HVn73COqg8IrvrkXF6";
+const CARE_ENCRYPTION_KEY = CryptoJS.enc.Utf8.parse("z5yK1lw7XYt6YKdP7Pne2Jw3zRkMAziH");
+const CARE_ENCRYPTION_IV = CryptoJS.enc.Utf8.parse("i0kbCAlFTlDXshYV");
+
+function encryptForCarePortal(value: string): string {
+  const encrypted = CryptoJS.AES.encrypt(value, CARE_ENCRYPTION_KEY, { iv: CARE_ENCRYPTION_IV }).toString();
+  return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(encrypted));
+}
 
 interface InsurancePolicy {
   id: number;
@@ -155,7 +163,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
   const isMobileValid = /^\d{10}$/.test(cleanedMobile);
   const isEmailValid = !!member.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email);
   const carePortalUrl = isMobileValid && isEmailValid
-    ? `https://partners.careinsurance.com/portals/asego/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${btoa(cleanedMobile)}&email=${btoa(member.email)}`
+    ? `http://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(cleanedMobile)}&email=${encryptForCarePortal(member.email)}`
     : null;
 
   const formatCurrency = (amount: number) => {
@@ -223,7 +231,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                 Book Directly
               </button>
               <p>Renew your membership to unlock insurance booking</p>
-              <a href="/renew-membership" className="text-xs text-sky-600 dark:text-sky-400 hover:underline">
+              <a href="/renew-membership" className="text-sm text-sky-600 dark:text-sky-400 hover:underline">
                 Click to renew membership &rarr;
               </a>
             </div>
@@ -560,7 +568,7 @@ function InsuranceDirectBookingModal({ isOpen, onClose, defaultMobile = "", defa
     e.preventDefault();
     if (!validate()) return;
 
-    const url = `https://partners.careinsurance.com/portals/asego/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${btoa(mobile.trim())}&email=${btoa(email.trim())}`;
+    const url = `http://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(mobile.trim())}&email=${encryptForCarePortal(email.trim())}`;
     const opened = window.open(url, "_blank", "noopener,noreferrer");
 
     if (!opened) {
