@@ -35,6 +35,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     "SELECT id, title, event_type, location, start_date, end_date FROM events WHERE start_date >= CURDATE() AND is_published = TRUE ORDER BY start_date ASC LIMIT 5"
   );
 
+  // Get active insurance policy end date, for the expiry warning banner
+  const insurancePolicies = await query<{ end_date: string }>(
+    "SELECT end_date FROM insurance_policies WHERE member_id = ? AND status = 'active' ORDER BY end_date DESC LIMIT 1",
+    [userId]
+  );
+  const insuranceEndDate = insurancePolicies[0]?.end_date ?? null;
+
 
   // Check for success messages
   const url = new URL(request.url);
@@ -49,7 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   await updateSessionActivity(request);
   console.log("[dashboard] Session activity updated");
 
-  return { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated };
+  return { member, upcomingEvents, insuranceEndDate, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated };
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -60,7 +67,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { member, upcomingEvents, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated } = loaderData;
+  const { member, upcomingEvents, insuranceEndDate, applicationSuccess, insuranceRequested, ratingRequested, imageUpdated, renewalRequested, profileUpdated } = loaderData;
 
   const memberSince = new Date(member.created_at).toLocaleDateString("en-IN", {
     month: "long",
@@ -276,6 +283,35 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 <a
                   href="/renew-membership"
                   className="text-sm font-semibold text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition whitespace-nowrap"
+                >
+                  Renew Now →
+                </a>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Insurance expiry warning — shown within 60 days of expiry and after expiry, until renewed */}
+        {(() => {
+          if (!insuranceEndDate) return null;
+          const insuranceDays = Math.ceil((new Date(insuranceEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          if (insuranceDays > 60) return null;
+          const insuranceExpiryDate = new Date(insuranceEndDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+          const insuranceMessage = insuranceDays < 0
+            ? <>Your insurance <strong>expired on {insuranceExpiryDate}</strong>. Please renew to stay covered.</>
+            : <>Your insurance expires in <strong>{insuranceDays} day{insuranceDays !== 1 ? 's' : ''}</strong> ({insuranceExpiryDate})</>;
+          return (
+            <div className="mb-8 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-sky-600 dark:text-sky-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm font-medium text-sky-900 dark:text-sky-200">{insuranceMessage}</p>
+                </div>
+                <a
+                  href="/insurance"
+                  className="text-sm font-semibold text-sky-800 dark:text-sky-300 hover:text-sky-900 dark:hover:text-sky-100 transition whitespace-nowrap"
                 >
                   Renew Now →
                 </a>

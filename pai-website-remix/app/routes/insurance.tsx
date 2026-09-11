@@ -208,7 +208,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               Protect yourself with comprehensive paragliding insurance coverage
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-              (Insurance status is displayed on your PAI Membership Card. If it is not updated, please send a copy of your Insurance Policy to support@pgaoi.org for updating the status on your Membership Card.)
+              (Insurance status is displayed on your PAI Membership Card. If it is not updated, please send a copy <br/> of your Insurance Policy to support@pgaoi.org for updating the status on your Membership Card.)
             </p>
           </div>
 
@@ -222,8 +222,9 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               >
                 Book Directly
               </button>
+              <p>Renew your membership to unlock insurance booking</p>
               <a href="/renew-membership" className="text-xs text-sky-600 dark:text-sky-400 hover:underline">
-                Renew your membership to unlock this - Renew Now &rarr;
+                Click to renew membership &rarr;
               </a>
             </div>
           ) : carePortalUrl ? (
