@@ -19,8 +19,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const config = await getInsuranceBookingConfig();
   const events = await getRecentInsuranceBookingEvents();
+  const currentlyEnabled = isDirectBookingEnabled(config);
+  const autoDisabled = isCurrentlyAutoDisabled(config);
 
-  return { member, config, events };
+  return { member, config, events, currentlyEnabled, autoDisabled };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -61,11 +63,8 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 export default function AdminSettings({ loaderData }: Route.ComponentProps) {
-  const { member, config, events } = loaderData;
+  const { member, config, events, currentlyEnabled, autoDisabled } = loaderData;
   const actionData = useActionData<typeof action>();
-
-  const currentlyEnabled = isDirectBookingEnabled(config);
-  const autoDisabled = isCurrentlyAutoDisabled(config);
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
