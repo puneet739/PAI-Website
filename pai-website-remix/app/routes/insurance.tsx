@@ -1,20 +1,16 @@
 import type { Route } from "./+types/insurance";
 import { Form, redirect, useActionData } from "react-router";
 import { useState } from "react";
-import CryptoJS from "crypto-js";
+import { encryptForCarePortal, CARE_PORTAL_TOKEN } from "~/lib/care-portal";
 import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
 import { query } from "~/lib/db.server";
+import {
+  getInsuranceBookingConfig,
+  runRecoveryCheckIfDue,
+  isDirectBookingEnabled,
+} from "~/lib/insurance-booking.server";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
-
-const CARE_PORTAL_TOKEN = "aVVpWTN3U3c4cEV0N291S0dNOHpTZz09OjpZc7HVn73COqg8IrvrkXF6";
-const CARE_ENCRYPTION_KEY = CryptoJS.enc.Utf8.parse("z5yK1lw7XYt6YKdP7Pne2Jw3zRkMAziH");
-const CARE_ENCRYPTION_IV = CryptoJS.enc.Utf8.parse("i0kbCAlFTlDXshYV");
-
-function encryptForCarePortal(value: string): string {
-  const encrypted = CryptoJS.AES.encrypt(value, CARE_ENCRYPTION_KEY, { iv: CARE_ENCRYPTION_IV }).toString();
-  return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(encrypted));
-}
 
 interface InsurancePolicy {
   id: number;
@@ -43,7 +39,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const activePolicy = policies.find(p => p.status === 'active');
 
-  return { member, policies, activePolicy };
+  let bookingConfig = await getInsuranceBookingConfig();
+  bookingConfig = await runRecoveryCheckIfDue(bookingConfig);
+  const isDirectBookingAvailable = isDirectBookingEnabled(bookingConfig);
+
+  return { member, policies, activePolicy, isDirectBookingAvailable };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -152,18 +152,26 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+function reportCarePortalCheck() {
+  fetch("/api/check-care-portal", { method: "POST" }).catch(() => {
+    // best-effort only — never block or surface this to the member
+  });
+}
+
 export default function Insurance({ loaderData, actionData }: Route.ComponentProps) {
-  const { member, policies, activePolicy } = loaderData;
+  const { member, policies, activePolicy, isDirectBookingAvailable } = loaderData;
 
   const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
 
   const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  const canUseDirectBooking = isDirectBookingAvailable && !isMembershipExpired;
+  const showManualForm = !canUseDirectBooking;
 
   const cleanedMobile = member.phone ? member.phone.replace(/\D/g, "").slice(-10) : "";
   const isMobileValid = /^\d{10}$/.test(cleanedMobile);
   const isEmailValid = !!member.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email);
   const carePortalUrl = isMobileValid && isEmailValid
-    ? `http://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(cleanedMobile)}&email=${encryptForCarePortal(member.email)}`
+    ? `https://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(cleanedMobile)}&email=${encryptForCarePortal(member.email)}`
     : null;
 
   const formatCurrency = (amount: number) => {
@@ -235,11 +243,16 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                 Click to renew membership &rarr;
               </a>
             </div>
+          ) : !isDirectBookingAvailable ? (
+            <p className="flex-shrink-0 max-w-[220px] text-right text-xs text-gray-500 dark:text-gray-400">
+              Direct booking is temporarily unavailable — please use the form below.
+            </p>
           ) : carePortalUrl ? (
             <a
               href={carePortalUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={reportCarePortalCheck}
               className="flex-shrink-0 flex items-center justify-center py-2.5 px-5 rounded-full border border-sky-500 text-sky-600 dark:text-sky-400 font-medium hover:bg-sky-50 dark:hover:bg-sky-900/20 transition"
             >
               Book Directly
@@ -263,7 +276,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Current Policy */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={`space-y-6 ${showManualForm ? "lg:col-span-2" : "lg:col-span-3"}`}>
             {activePolicy ? (
               <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -359,6 +372,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
           </div>
 
           {/* Insurance Request Form */}
+          {showManualForm && (
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm sticky top-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Request Insurance</h3>
@@ -479,6 +493,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               </Form>
             </div>
           </div>
+          )}
         </div>
 
         {/* Plan Comparison */}
@@ -568,8 +583,9 @@ function InsuranceDirectBookingModal({ isOpen, onClose, defaultMobile = "", defa
     e.preventDefault();
     if (!validate()) return;
 
-    const url = `http://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(mobile.trim())}&email=${encryptForCarePortal(email.trim())}`;
+    const url = `https://partners.careinsurance.com/portals/pai/index.php?token=${CARE_PORTAL_TOKEN}&tel_no=${encryptForCarePortal(mobile.trim())}&email=${encryptForCarePortal(email.trim())}`;
     const opened = window.open(url, "_blank", "noopener,noreferrer");
+    reportCarePortalCheck();
 
     if (!opened) {
       setPopupBlockedUrl(url);

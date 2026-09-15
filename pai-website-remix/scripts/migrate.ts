@@ -35,6 +35,15 @@ async function columnExists(conn: mysql.Connection, table: string, column: strin
   return rows[0].cnt > 0;
 }
 
+async function tableExists(conn: mysql.Connection, table: string, database: string): Promise<boolean> {
+  const [rows] = await conn.execute(
+    `SELECT COUNT(*) as cnt FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
+    [database, table]
+  ) as any;
+  return rows[0].cnt > 0;
+}
+
 async function run() {
   const config = getConfig();
   const conn = await mysql.createConnection(config);
@@ -148,6 +157,50 @@ async function run() {
     } catch (err: any) {
       console.error("Failed (migration 10):", err.message);
     }
+  // Migration 11: insurance booking toggle config + event log
+  const hasConfigTable = await tableExists(conn, "insurance_booking_config", db);
+  const hasEventsTable = await tableExists(conn, "insurance_booking_events", db);
+
+  try {
+    if (!hasConfigTable) {
+      await conn.execute(`
+        CREATE TABLE insurance_booking_config (
+          id INT PRIMARY KEY DEFAULT 1,
+          direct_booking_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+          consecutive_failures INT NOT NULL DEFAULT 0,
+          auto_disabled_until DATETIME NULL,
+          last_recovery_check_at DATETIME NULL,
+          updated_by INT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      await conn.execute(
+        `INSERT IGNORE INTO insurance_booking_config (id, direct_booking_enabled) VALUES (1, TRUE)`
+      );
+      console.log("Applied: Create insurance_booking_config");
+    } else {
+      console.log("Already applied: insurance_booking_config already exists");
+    }
+
+    if (!hasEventsTable) {
+      await conn.execute(`
+        CREATE TABLE insurance_booking_events (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          event_type ENUM('auto_disabled', 'auto_recovered', 'admin_enabled', 'admin_disabled') NOT NULL,
+          actor_id INT NULL,
+          note VARCHAR(255) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (actor_id) REFERENCES members(id) ON DELETE SET NULL
+        )
+      `);
+      console.log("Applied: Create insurance_booking_events");
+    } else {
+      console.log("Already applied: insurance_booking_events already exists");
+    }
+  } catch (err: any) {
+    console.error("Failed (migration 11):", err.message);
+  }
+
   await conn.end();
   console.log("\nDone.");
 }

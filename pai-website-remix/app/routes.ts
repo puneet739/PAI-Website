@@ -23,9 +23,11 @@ export default [
   route("upload-profile-image", "routes/upload-profile-image.tsx"),
   route("download-insurance-card/:policyId", "routes/download-insurance-card.$policyId.tsx"),
   route("admin", "routes/admin.tsx"),
+  route("admin/settings", "routes/admin.settings.tsx"),
   route("manage-users", "routes/manage-users.tsx"),
   route("logout", "routes/logout.tsx"),
   route("api/search-pilot", "routes/api.search-pilot.tsx"),
+  route("api/check-care-portal", "routes/api.check-care-portal.tsx"),
   route("terms", "routes/terms.tsx"),
   route("privacy", "routes/privacy.tsx"),
   // Catch-all route for 404s and DevTools requests (must be last)
