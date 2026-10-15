@@ -253,6 +253,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               target="_blank"
               rel="noopener noreferrer"
               onClick={reportCarePortalCheck}
+              onContextMenu={(e) => e.preventDefault()}
               className="flex-shrink-0 flex items-center justify-center py-2.5 px-5 rounded-full border border-sky-500 text-sky-600 dark:text-sky-400 font-medium hover:bg-sky-50 dark:hover:bg-sky-900/20 transition"
             >
               Book Directly
@@ -393,13 +394,13 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                   >
                     <option value="">Select a plan</option>
-                    <option value="basic">Solo Basic  - ₹2,631/year (₹5L coverage)</option>
-                    <option value="premium">Solo Premium - ₹3,759/year (₹10L coverage)</option>
-                    <option value="premium2">Solo Premium - ₹6,767/year (₹20L coverage)</option>
-                    <option value="comprehensive">Solo Comprehensive - ₹12,219/year (₹40L coverage)</option>
-                    <option value="comprehensive2">Solo Comprehensive - ₹15,039/year (₹50L coverage)</option>
-                    <option value="tandem1">Tandem Basic  - ₹3,750/year (₹5L coverage)</option>
-                    <option value="tandem2">Tandem Basic  - ₹5,545/year (₹10L coverage)</option>
+                    <option value="basic">Solo - ₹2,631/year (₹5L coverage)</option>
+                    <option value="premium">Solo - ₹3,759/year (₹10L coverage)</option>
+                    <option value="premium2">Solo - ₹6,767/year (₹20L coverage)</option>
+                    <option value="comprehensive">Solo - ₹12,219/year (₹40L coverage)</option>
+                    <option value="comprehensive2">Solo - ₹15,039/year (₹50L coverage)</option>
+                    <option value="tandem1">Tandem - ₹3,750/year (₹5L coverage)</option>
+                    <option value="tandem2">Tandem - ₹5,545/year (₹10L coverage)</option>
                   </select>
                 </div>
 
@@ -478,12 +479,6 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                   />
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <p className="text-xs text-blue-800 dark:text-blue-300">
-                    <strong>Note:</strong> Your request will be reviewed by our admin team. You will receive a QR code via email for payment. Once payment is verified, your insurance will be activated.
-                  </p>
-                </div>
-
                 <button
                   type="submit"
                   className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white font-medium hover:opacity-95 transition"
@@ -494,48 +489,6 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
             </div>
           </div>
           )}
-        </div>
-
-        {/* Plan Comparison */}
-        <div className="mt-8 bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Plan Comparison</h3>
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Basic Plan Info */}
-            <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Basic</h4>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹2,000/year</p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li>• ₹20 Lakh coverage</li>
-                <li>• Accident coverage</li>
-                <li>• Emergency assistance</li>
-              </ul>
-            </div>
-
-            {/* Premium Plan Info */}
-            <div className="p-4 rounded-lg border-2 border-sky-500 dark:border-sky-500">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Premium</h4>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹5,000/year</p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li>• ₹50 Lakh coverage</li>
-                <li>• Full accident coverage</li>
-                <li>• 24/7 emergency assistance</li>
-                <li>• Equipment coverage</li>
-              </ul>
-            </div>
-
-            {/* Comprehensive Plan Info */}
-            <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Comprehensive</h4>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-3">₹10,000/year</p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li>• ₹1 Crore coverage</li>
-                <li>• Complete accident coverage</li>
-                <li>• Priority emergency response</li>
-                <li>• Full equipment coverage</li>
-                <li>• International coverage</li>
-              </ul>
-            </div>
-          </div>
         </div>
         </main>
       </div>
