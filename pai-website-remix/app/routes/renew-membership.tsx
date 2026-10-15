@@ -106,7 +106,7 @@ export async function action({ request }: Route.ActionArgs) {
     const lifeCount = Number(lifeCountRows[0]?.cnt ?? 0);
 
     if (lifeCount >= MAX_LIFE_MEMBERSHIPS) {
-      return { error: `Life membership slots are full (${MAX_LIFE_MEMBERSHIPS}/${MAX_LIFE_MEMBERSHIPS}). No slots available.` };
+      return { error: `Life membership slots are full. No slots available.` };
     }
 
     if (step !== "confirm") {
@@ -626,7 +626,7 @@ export default function RenewMembership({ loaderData }: Route.ComponentProps) {
               <div className="flex justify-between text-sm pt-2 border-t border-purple-200 dark:border-purple-700">
                 <span className="text-gray-600 dark:text-gray-400">Slots remaining</span>
                 <span className={`font-semibold ${lifeSlotsFull ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                  {lifeSlotsFull ? "Full" : `${lifeSlotsLeft} / ${MAX_LIFE_MEMBERSHIPS}`}
+                  {lifeSlotsFull ? "Full" : `${lifeSlotsLeft}`}
                 </span>
               </div>
             </div>
