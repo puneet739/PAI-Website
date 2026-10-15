@@ -316,6 +316,17 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
   const { member, searchResults, selectedUser, userInsurance, auditLogs, searchQuery } = loaderData;
   const actionData = useActionData<typeof action>();
 
+  function handleInsuranceStartDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const startDate = e.target.value;
+    const endDateInput = document.getElementById("insuranceEndDate") as HTMLInputElement | null;
+    if (!startDate || !endDateInput) return;
+    const [y, m, d] = startDate.split("-").map(Number);
+    const end = new Date(Date.UTC(y, m - 1, d));
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+    end.setUTCDate(end.getUTCDate() - 1);
+    endDateInput.value = end.toISOString().slice(0, 10);
+  }
+
   // Helper to render one or more rating labels
   const renderRatingLabels = (value: string | null) => {
     if (!value) return 'N/A';
@@ -763,6 +774,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         <input
                           type="date"
                           name="startDate"
+                          onChange={handleInsuranceStartDateChange}
                           defaultValue={userInsurance?.start_date ? new Date(userInsurance.start_date).toISOString().split('T')[0] : ''}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
@@ -775,6 +787,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         <input
                           type="date"
                           name="endDate"
+                          id="insuranceEndDate"
                           defaultValue={userInsurance?.end_date ? new Date(userInsurance.end_date).toISOString().split('T')[0] : ''}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />

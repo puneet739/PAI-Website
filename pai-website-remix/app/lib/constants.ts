@@ -52,6 +52,7 @@ export function calculateNewExpiry(
 
   const base = new Date(baseStr + "T00:00:00Z");
   base.setUTCFullYear(base.getUTCFullYear() + years);
+  base.setUTCDate(base.getUTCDate() - 1);
   return base.toISOString().slice(0, 10);
 }
 
