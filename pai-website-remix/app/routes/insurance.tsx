@@ -215,7 +215,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
         <main className="p-8">
         {/* Page Title */}
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Paragliding Insurance
@@ -229,7 +229,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
           </div>
 
           {isMembershipExpired ? (
-            <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+            <div className="flex flex-col items-end gap-1.5">
               <button
                 type="button"
                 disabled
@@ -238,7 +238,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               >
                 Book Directly
               </button>
-              <p>Renew your membership to unlock insurance booking</p>
+              <p className="text-right text-xs text-gray-500 dark:text-gray-400">Renew your membership to unlock insurance booking</p>
               <a href="/renew-membership" className="text-sm text-sky-600 dark:text-sky-400 hover:underline">
                 Click to renew membership &rarr;
               </a>
