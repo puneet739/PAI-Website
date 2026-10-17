@@ -54,6 +54,11 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "Member not found" };
   }
 
+  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  if (isMembershipExpired) {
+    return { error: "Your membership has expired. Please renew your membership to request insurance." };
+  }
+
   const formData = await request.formData();
   const action = formData.get("_action");
 
@@ -165,7 +170,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
   const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
   const canUseDirectBooking = isDirectBookingAvailable && !isMembershipExpired;
-  const showManualForm = !canUseDirectBooking;
+  const showManualForm = !canUseDirectBooking && !isMembershipExpired;
 
   const cleanedMobile = member.phone ? member.phone.replace(/\D/g, "").slice(-10) : "";
   const isMobileValid = /^\d{10}$/.test(cleanedMobile);
@@ -341,6 +346,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Insurance</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">You don't have an active insurance policy yet</p>
                   <p className="text-sm text-gray-500 dark:text-gray-500">Choose a plan from the options on the right to get started</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500">Please renew your membership to request insurance if you don't find insurance form</p>
                 </div>
               </div>
             )}
