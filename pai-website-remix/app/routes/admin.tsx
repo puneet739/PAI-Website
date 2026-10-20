@@ -141,7 +141,7 @@ export async function action({ request }: Route.ActionArgs) {
 
       // Activate member and extend validity for 1 year
       await query(
-        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(CURDATE(), INTERVAL 1 YEAR) WHERE id = ?",
+        "UPDATE members SET membership_status = 'active', active_until = DATE_SUB(DATE_ADD(CURDATE(), INTERVAL 1 YEAR), INTERVAL 1 DAY) WHERE id = ?",
         [member_id]
       );
 
@@ -219,7 +219,7 @@ export async function action({ request }: Route.ActionArgs) {
 
       const years = renewal_duration_years && renewal_duration_years > 0 ? renewal_duration_years : 1;
       await query(
-        "UPDATE members SET membership_status = 'active', active_until = DATE_ADD(GREATEST(CURDATE(), COALESCE(active_until, CURDATE())), INTERVAL ? YEAR) WHERE id = ?",
+        "UPDATE members SET membership_status = 'active', active_until = DATE_SUB(DATE_ADD(GREATEST(CURDATE(), COALESCE(active_until, CURDATE())), INTERVAL ? YEAR), INTERVAL 1 DAY) WHERE id = ?",
         [years, member_id]
       );
 

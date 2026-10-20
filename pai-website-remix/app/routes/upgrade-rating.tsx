@@ -73,6 +73,11 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "You already have a pending rating upgrade request" };
   }
 
+  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  if (isMembershipExpired) {
+    return { error: "Your membership has expired. Please renew your membership before requesting a rating upgrade." };
+  }
+
   // Create rating upgrade request
   const result = await query(
     "INSERT INTO member_requests (member_id, request_type, name, email, phone, details, current_rating, requested_rating, status) VALUES (?, 'rating_upgrade', ?, ?, ?, ?, ?, ?, 'pending')",
@@ -137,6 +142,40 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
       }
     });
   };
+
+  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+
+  if (isMembershipExpired) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+        <DashboardSidebar currentPath="/dashboard" userRole={member.role_name} />
+        <div className="flex-1">
+          <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
+            <div className="px-8 py-4 flex items-center justify-between">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Upgrade Pilot Rating</h1>
+              <a href="/dashboard" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                ← Back to Dashboard
+              </a>
+            </div>
+          </header>
+          <main className="p-8">
+            <div className="max-w-2xl mx-auto bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-8 shadow-sm text-center">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Membership Expired</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Renew your membership to request a rating upgrade.
+              </p>
+              <a
+                href="/renew-membership"
+                className="inline-flex px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white font-medium hover:opacity-95 transition"
+              >
+                Renew Membership
+              </a>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

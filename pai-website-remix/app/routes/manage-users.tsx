@@ -316,6 +316,29 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
   const { member, searchResults, selectedUser, userInsurance, auditLogs, searchQuery } = loaderData;
   const actionData = useActionData<typeof action>();
 
+  function updateInsuranceStatusFromEndDate(endDate: string) {
+    const statusSelect = document.getElementById("insuranceStatus") as HTMLSelectElement | null;
+    if (!statusSelect || !endDate || statusSelect.value === "cancelled") return;
+    statusSelect.value = new Date(endDate) < new Date() ? "expired" : "active";
+  }
+
+  function handleInsuranceStartDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const startDate = e.target.value;
+    const endDateInput = document.getElementById("insuranceEndDate") as HTMLInputElement | null;
+    if (!startDate || !endDateInput) return;
+    const [y, m, d] = startDate.split("-").map(Number);
+    const end = new Date(Date.UTC(y, m - 1, d));
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+    end.setUTCDate(end.getUTCDate() - 1);
+    const newEndDate = end.toISOString().slice(0, 10);
+    endDateInput.value = newEndDate;
+    updateInsuranceStatusFromEndDate(newEndDate);
+  }
+
+  function handleInsuranceEndDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    updateInsuranceStatusFromEndDate(e.target.value);
+  }
+
   // Helper to render one or more rating labels
   const renderRatingLabels = (value: string | null) => {
     if (!value) return 'N/A';
@@ -719,12 +742,11 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         </label>
                         <select
                           name="policyType"
-                          defaultValue={userInsurance?.policy_type || 'basic'}
+                          defaultValue={userInsurance?.policy_type || 'solo'}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         >
-                          <option value="basic">Basic</option>
-                          <option value="premium">Premium</option>
-                          <option value="comprehensive">Comprehensive</option>
+                          <option value="solo">Solo</option>
+                          <option value="tandem">Tandem</option>
                         </select>
                       </div>
 
@@ -763,6 +785,7 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         <input
                           type="date"
                           name="startDate"
+                          onChange={handleInsuranceStartDateChange}
                           defaultValue={userInsurance?.start_date ? new Date(userInsurance.start_date).toISOString().split('T')[0] : ''}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
@@ -775,6 +798,8 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         <input
                           type="date"
                           name="endDate"
+                          id="insuranceEndDate"
+                          onChange={handleInsuranceEndDateChange}
                           defaultValue={userInsurance?.end_date ? new Date(userInsurance.end_date).toISOString().split('T')[0] : ''}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         />
@@ -786,7 +811,12 @@ export default function ManageUsers({ loaderData }: Route.ComponentProps) {
                         </label>
                         <select
                           name="status"
-                          defaultValue={userInsurance?.status || 'active'}
+                          id="insuranceStatus"
+                          defaultValue={
+                            userInsurance?.status === 'cancelled'
+                              ? 'cancelled'
+                              : (userInsurance?.end_date && new Date(userInsurance.end_date) < new Date() ? 'expired' : 'active')
+                          }
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:text-white"
                         >
                           <option value="active">Active</option>

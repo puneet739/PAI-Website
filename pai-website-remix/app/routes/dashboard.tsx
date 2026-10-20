@@ -376,14 +376,26 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 </div>
                 <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Rating</h3>
               </div>
-              <a
-                href="/upgrade-rating"
-                className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30 transition font-medium"
-              >
-                Upgrade
-              </a>
+              {isExpired ? (
+                <a
+                  href="/renew-membership"
+                  className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 transition font-medium"
+                >
+                  Renew to Upgrade
+                </a>
+              ) : (
+                <a
+                  href="/upgrade-rating"
+                  className="text-xs px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30 transition font-medium"
+                >
+                  Upgrade
+                </a>
+              )}
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{getRatingLabel(member.pilot_rating)}</p>
+            {isExpired && (
+              <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mt-1">Renew your membership to upgrade your rating</p>
+            )}
           </div>
         </div>
 
