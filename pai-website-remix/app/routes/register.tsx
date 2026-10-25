@@ -1,8 +1,10 @@
 import type { Route } from "./+types/register";
 import { Form, redirect, useActionData } from "react-router";
+import { Recaptcha } from "~/components/Recaptcha";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return null;
+  const { getRecaptchaSiteKey } = await import("~/lib/recaptcha.server");
+  return { recaptchaSiteKey: getRecaptchaSiteKey() };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -10,6 +12,14 @@ export async function action({ request }: Route.ActionArgs) {
   const { getSession, commitSession } = await import("~/lib/session.server");
   
   const formData = await request.formData();
+
+  const { verifyRecaptcha } = await import("~/lib/recaptcha.server");
+  if (!(await verifyRecaptcha(formData))) {
+    return {
+      error: "Captcha verification failed. Please try again.",
+    };
+  }
+
   const email = formData.get("email");
 
   if (typeof email !== "string" || !email) {
@@ -79,7 +89,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function Register() {
+export default function Register({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
 
   return (
@@ -118,6 +128,8 @@ export default function Register() {
               <p className="text-sm text-red-800 dark:text-red-200">{actionData.error}</p>
             </div>
           )}
+
+          <Recaptcha siteKey={loaderData?.recaptchaSiteKey ?? null} resetKey={actionData} />
 
           <div>
             <button

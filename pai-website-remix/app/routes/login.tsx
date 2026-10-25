@@ -1,5 +1,6 @@
 import type { Route } from "./+types/login";
 import { Form, redirect, useActionData } from "react-router";
+import { Recaptcha } from "~/components/Recaptcha";
 
 export async function loader({ request }: Route.LoaderArgs) {
   console.log("[login] Loader called");
@@ -23,11 +24,21 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Check if this is a demo site
   const isDemoSite = process.env.IS_DEMO_SITE === "true";
   
-  return { resetSuccess, isDemoSite };
+  const { getRecaptchaSiteKey } = await import("~/lib/recaptcha.server");
+
+  return { resetSuccess, isDemoSite, recaptchaSiteKey: getRecaptchaSiteKey() };
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
+
+  const { verifyRecaptcha } = await import("~/lib/recaptcha.server");
+  if (!(await verifyRecaptcha(formData))) {
+    return {
+      error: "Captcha verification failed. Please try again.",
+    };
+  }
+
   const email = formData.get("email");
   const password = formData.get("password");
 
@@ -73,7 +84,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Login({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
-  const { resetSuccess, isDemoSite } = loaderData || {};
+  const { resetSuccess, isDemoSite, recaptchaSiteKey } = loaderData || {};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -133,6 +144,7 @@ export default function Login({ loaderData }: Route.ComponentProps) {
             </div>
           </div>
 
+          <Recaptcha siteKey={recaptchaSiteKey ?? null} resetKey={actionData} />
 
           <div>
             <button

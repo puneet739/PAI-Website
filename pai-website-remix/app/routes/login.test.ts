@@ -42,7 +42,7 @@ describe('Login Route', () => {
       
       const result = await loader({ request, params: {}, context: {} } as any);
       
-      expect(result).toEqual({ resetSuccess: false, isDemoSite: false });
+      expect(result).toEqual({ resetSuccess: false, isDemoSite: false, recaptchaSiteKey: null });
     });
 
     it('should detect password reset success from URL', async () => {
@@ -53,7 +53,7 @@ describe('Login Route', () => {
       
       const result = await loader({ request, params: {}, context: {} } as any);
       
-      expect(result).toEqual({ resetSuccess: true, isDemoSite: false });
+      expect(result).toEqual({ resetSuccess: true, isDemoSite: false, recaptchaSiteKey: null });
     });
 
     it('should detect demo site mode', async () => {
@@ -65,7 +65,7 @@ describe('Login Route', () => {
       
       const result = await loader({ request, params: {}, context: {} } as any);
       
-      expect(result).toEqual({ resetSuccess: false, isDemoSite: true });
+      expect(result).toEqual({ resetSuccess: false, isDemoSite: true, recaptchaSiteKey: null });
     });
   });
 
