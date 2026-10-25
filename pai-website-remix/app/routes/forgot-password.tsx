@@ -1,9 +1,21 @@
 import type { Route } from "./+types/forgot-password";
 import { Form, redirect, useActionData } from "react-router";
+import { Recaptcha } from "~/components/Recaptcha";
+
+export async function loader({}: Route.LoaderArgs) {
+  const { getRecaptchaSiteKey } = await import("~/lib/recaptcha.server");
+  return { recaptchaSiteKey: getRecaptchaSiteKey() };
+}
 
 export async function action({ request }: Route.ActionArgs) {
   const { query } = await import("~/lib/db.server");
   const formData = await request.formData();
+
+  const { verifyRecaptcha } = await import("~/lib/recaptcha.server");
+  if (!(await verifyRecaptcha(formData))) {
+    return { error: "Captcha verification failed. Please try again." };
+  }
+
   const email = formData.get("email");
 
   if (typeof email !== "string" || !email) {
@@ -53,7 +65,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function ForgotPassword() {
+export default function ForgotPassword({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>();
 
   return (
@@ -89,6 +101,8 @@ export default function ForgotPassword() {
               placeholder="Enter your email"
             />
           </div>
+
+          <Recaptcha siteKey={loaderData?.recaptchaSiteKey ?? null} resetKey={actionData} />
 
           <div>
             <button
