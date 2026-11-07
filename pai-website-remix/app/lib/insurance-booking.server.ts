@@ -1,7 +1,7 @@
 import { query, queryOne } from "~/lib/db.server";
 import { buildCarePortalUrl } from "~/lib/care-portal";
 
-const FAILURE_THRESHOLD = 5;
+const DEFAULT_FAILURE_THRESHOLD = 50;
 const AUTO_DISABLE_HOURS = 24;
 const RECOVERY_CHECK_THROTTLE_MS = 15 * 60 * 1000;
 const CHECK_TIMEOUT_MS = 8000;
@@ -33,6 +33,12 @@ export async function getInsuranceBookingConfig(): Promise<InsuranceBookingConfi
   return config!;
 }
 
+// Consecutive CARE check failures before direct booking is auto-disabled (CARE_FAILURE_THRESHOLD in .env)
+function getFailureThreshold(): number {
+  const value = parseInt(process.env.CARE_FAILURE_THRESHOLD || "", 10);
+  return value > 0 ? value : DEFAULT_FAILURE_THRESHOLD;
+}
+
 export function isCurrentlyAutoDisabled(config: InsuranceBookingConfig): boolean {
   return !!config.auto_disabled_until && new Date(config.auto_disabled_until).getTime() > Date.now();
 }
@@ -47,8 +53,12 @@ async function pingCarePortal(): Promise<boolean> {
   const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
   try {
     const response = await fetch(testUrl, { method: "GET", signal: controller.signal });
+    if (!response.ok) {
+      console.error(`CARE portal check failed: HTTP ${response.status}`);
+    }
     return response.ok;
-  } catch {
+  } catch (err: any) {
+    console.error(`CARE portal check failed: ${err?.name === "AbortError" ? `timeout after ${CHECK_TIMEOUT_MS}ms` : err?.message}`);
     return false;
   } finally {
     clearTimeout(timeout);
@@ -74,7 +84,7 @@ export async function recordCareCheckResult(success: boolean): Promise<void> {
   }
 
   const newFailureCount = config.consecutive_failures + 1;
-  if (newFailureCount >= FAILURE_THRESHOLD && !isCurrentlyAutoDisabled(config)) {
+  if (newFailureCount >= getFailureThreshold() && !isCurrentlyAutoDisabled(config)) {
     await query(
       `UPDATE insurance_booking_config
        SET consecutive_failures = ?, auto_disabled_until = DATE_ADD(NOW(), INTERVAL ${AUTO_DISABLE_HOURS} HOUR)

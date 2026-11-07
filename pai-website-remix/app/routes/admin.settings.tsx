@@ -56,7 +56,7 @@ function formatDateTime(value: string | null): string {
 }
 
 const EVENT_LABELS: Record<string, string> = {
-  auto_disabled: "Auto-disabled (5 consecutive failures)",
+  auto_disabled: "Auto-disabled (consecutive failures)",
   auto_recovered: "Auto-recovered (check succeeded)",
   admin_enabled: "Enabled by admin",
   admin_disabled: "Disabled by admin",
@@ -105,7 +105,7 @@ export default function AdminSettings({ loaderData }: Route.ComponentProps) {
               <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Admin switch</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {config.direct_booking_enabled ? "On" : "Off"}
+                  {autoDisabled ? "Off (auto-disabled)" : config.direct_booking_enabled ? "On" : "Off"}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
@@ -121,16 +121,16 @@ export default function AdminSettings({ loaderData }: Route.ComponentProps) {
             </div>
 
             <Form method="post">
-              <input type="hidden" name="enable" value={(!config.direct_booking_enabled).toString()} />
+              <input type="hidden" name="enable" value={(!currentlyEnabled).toString()} />
               <button
                 type="submit"
                 className={`px-5 py-2.5 rounded-full text-sm font-medium transition ${
-                  config.direct_booking_enabled
+                  currentlyEnabled
                     ? "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300"
                     : "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300"
                 }`}
               >
-                {config.direct_booking_enabled ? "Disable Direct Booking" : "Enable Direct Booking"}
+                {currentlyEnabled ? "Disable Direct Booking" : "Enable Direct Booking"}
               </button>
             </Form>
           </div>
@@ -146,7 +146,9 @@ export default function AdminSettings({ loaderData }: Route.ComponentProps) {
                   >
                     <div>
                       <p className="text-sm text-gray-900 dark:text-white">
-                        {EVENT_LABELS[event.event_type] || event.event_type}
+                        {event.event_type === "auto_disabled" && event.note
+                          ? `Auto-disabled (${event.note})`
+                          : EVENT_LABELS[event.event_type] || event.event_type}
                       </p>
                       {(event as any).actor_name && (
                         <p className="text-xs text-gray-500 dark:text-gray-400">by {(event as any).actor_name}</p>
