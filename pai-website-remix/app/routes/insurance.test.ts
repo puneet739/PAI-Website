@@ -33,6 +33,7 @@ describe('Insurance Request - Async Email Sending', () => {
       phone: '+919876543210',
       date_of_birth: '1990-01-01',
       membership_type: 'regular',
+      active_until: '2099-12-31',
     });
   });
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { encryptForCarePortal, CARE_PORTAL_TOKEN } from "~/lib/care-portal";
 import { requireUserId } from "~/lib/session.server";
 import { getMemberById } from "~/lib/auth.server";
+import { hasActiveMembership } from "~/lib/membership";
 import { query } from "~/lib/db.server";
 import {
   getInsuranceBookingConfig,
@@ -54,8 +55,11 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "Member not found" };
   }
 
-  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  const isMembershipExpired = !hasActiveMembership(member);
   if (isMembershipExpired) {
+    if (!member.active_until) {
+      return { error: "You need an active membership to request insurance. Please apply for membership." };
+    }
     return { error: "Your membership has expired. Please renew your membership to request insurance." };
   }
 
@@ -168,7 +172,7 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
 
   const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
 
-  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  const isMembershipExpired = !hasActiveMembership(member);
   const canUseDirectBooking = isDirectBookingAvailable && !isMembershipExpired;
   const showManualForm = !canUseDirectBooking && !isMembershipExpired;
 
@@ -243,10 +247,21 @@ export default function Insurance({ loaderData, actionData }: Route.ComponentPro
               >
                 Book Directly
               </button>
-              <p className="text-right text-xs text-gray-500 dark:text-gray-400">Renew your membership to unlock insurance booking</p>
-              <a href="/renew-membership" className="text-sm text-sky-600 dark:text-sky-400 hover:underline">
-                Click to renew membership &rarr;
-              </a>
+              {member.active_until ? (
+                <>
+                  <p className="text-right text-xs text-gray-500 dark:text-gray-400">Renew your membership to unlock insurance booking</p>
+                  <a href="/renew-membership" className="text-sm text-sky-600 dark:text-sky-400 hover:underline">
+                    Click to renew membership &rarr;
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p className="text-right text-xs text-gray-500 dark:text-gray-400">An active membership is required for insurance booking</p>
+                  <a href="/apply-membership" className="text-sm text-sky-600 dark:text-sky-400 hover:underline">
+                    Click to apply for membership &rarr;
+                  </a>
+                </>
+              )}
             </div>
           ) : !isDirectBookingAvailable ? (
             <p className="flex-shrink-0 max-w-[220px] text-right text-xs text-gray-500 dark:text-gray-400">
