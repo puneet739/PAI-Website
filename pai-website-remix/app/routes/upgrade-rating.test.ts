@@ -33,6 +33,7 @@ describe('Upgrade Rating - Async Email Sending', () => {
       phone: '+919876543210',
       pilot_rating: 'P2',
       membership_type: 'regular',
+      active_until: '2099-12-31',
     });
   });
 
