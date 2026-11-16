@@ -3,6 +3,7 @@ import { Form, redirect, useActionData } from "react-router";
 import { DashboardSidebar } from "~/components/DashboardSidebar";
 import { useState, useEffect } from "react";
 import { PILOT_RATINGS } from "~/lib/constants";
+import { hasActiveMembership } from "~/lib/membership";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { requireUserId } = await import("~/lib/session.server");
@@ -73,8 +74,11 @@ export async function action({ request }: Route.ActionArgs) {
     return { error: "You already have a pending rating upgrade request" };
   }
 
-  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  const isMembershipExpired = !hasActiveMembership(member);
   if (isMembershipExpired) {
+    if (!member.active_until) {
+      return { error: "You need an active membership to request a rating upgrade. Please apply for membership." };
+    }
     return { error: "Your membership has expired. Please renew your membership before requesting a rating upgrade." };
   }
 
@@ -143,7 +147,7 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
     });
   };
 
-  const isMembershipExpired = member.is_life_member !== 1 && member.active_until && new Date(member.active_until) < new Date();
+  const isMembershipExpired = !hasActiveMembership(member);
 
   if (isMembershipExpired) {
     return (
@@ -160,15 +164,15 @@ export default function UpgradeRating({ loaderData }: Route.ComponentProps) {
           </header>
           <main className="p-8">
             <div className="max-w-2xl mx-auto bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-8 shadow-sm text-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Membership Expired</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{member.active_until ? "Membership Expired" : "Membership Required"}</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Renew your membership to request a rating upgrade.
+                {member.active_until ? "Renew your membership to request a rating upgrade." : "Apply for membership to request a rating upgrade."}
               </p>
               <a
-                href="/renew-membership"
+                href={member.active_until ? "/renew-membership" : "/apply-membership"}
                 className="inline-flex px-6 py-3 rounded-full bg-gradient-to-r from-sky-500 to-orange-500 text-white font-medium hover:opacity-95 transition"
               >
-                Renew Membership
+                {member.active_until ? "Renew Membership" : "Apply for Membership"}
               </a>
             </div>
           </main>
